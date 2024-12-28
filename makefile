@@ -1,7 +1,7 @@
 # Makefile
 # Author: KK
 
-CXXFLAGS = -std=c++11 -g -O2\
+CXXFLAGS = -g -O2\
 	-fopenmp -Wpedantic -Wall -Wextra -Werror\
 	-Wdisabled-optimization\
 	-Wlogical-op\
