@@ -52,4 +52,8 @@
 *.in
 
 # Output data folder
-out_data/*
+OutData/*.png
+OutData/*.out
+OutData/*.csv
+OutData/*.bin
+OutData/*.z
