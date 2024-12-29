@@ -73,7 +73,7 @@ void Poisson1D::solve_tridiag() {
         d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
 
     // von Neumann BC
-    // @TODO: Fix it!
+    // TODO: Fix it!
     if (pBC_vN_) {
         A(1, 1) = -1, A(nx_-1, nx_-1) = -1;
         d(0) -= h_*neumannL_, d(nx_-1) += h_*neumannR_;
