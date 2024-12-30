@@ -26,18 +26,15 @@ using std::endl;
 using std::setw;
 // using namespace arma;
 
-// ############################## TYPEDEFs ##############################
-// @TODO: put into a namespace
-// typedef std::vector<double>::size_type size_t_vec_d;
-
 // ############################## GLOBAL VARIABLES ##############################
 // #define N_THREADS 4
 
 // ############################## CONSTANTS ##############################
+/// TODO: put into a namespace (maybe)
 
 double const PI {M_PI};
 double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
-double const KB_J {1.380649e-23};  // Boltzmann constant [J/K]
+double const KB_J {1.380649E-23};  // Boltzmann constant [J/K]
 double const E0 {1.602176634E-19};  // Elementary charge [C]
 double const HBAR_J {1.0545718176461565E-34};  // Reduced Planck constant [Js]
 double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
@@ -211,7 +208,7 @@ class matrix {
 //
 
 
-// #################### funkcja do liczenia całki ####################
+/// Integral (Simpson rule)
 template <class T>
 double calcInt(arma::vec f, T h){
     size_t n = f.size();
@@ -223,7 +220,7 @@ double calcInt(arma::vec f, T h){
 }
 
 
-// #################### funkcja do liczenia pierwszej pochodnej ####################
+/// First derivative
 template <class T>
 arma::vec calcFirstDer(arma::vec f, T h){
     size_t n = f.size();
@@ -243,7 +240,7 @@ arma::vec calcFirstDer(arma::vec f, T h){
 }
 
 
-// #################### funkcja do liczenia drugiej pochodnej ####################
+/// Second derivative
 template <class T>
 arma::vec calcSecondDer(arma::vec f, T h){
     size_t n = f.size();
@@ -256,7 +253,7 @@ arma::vec calcSecondDer(arma::vec f, T h){
 }
 
 
-// #################### funkcja do liczenia trzeciej pochodnej ####################
+/// Third derivative
 template <class T>
 arma::vec calcThirdDer(arma::vec f, T h){
     size_t n = f.size();
@@ -268,6 +265,26 @@ arma::vec calcThirdDer(arma::vec f, T h){
     df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
     df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
     return df;
+}
+
+/** 
+ * @brief Calculates gaussian distribution centered at (x_min + x_max) / 2
+ * @param x_min Minimum value of x
+ * @param x_max Maximum value of x
+ * @param sig   Standard deviation
+ * @param n     Number of points
+ * @return arma::vec Gaussian distribution
+*/
+template <class T>
+arma::vec gaussian_dist(T x_min = 0, T x_max = 1, T sig = 1, size_t n = 100){
+    arma::vec gauss(n, arma::fill::zeros);
+    double x = 0;
+    double mu = (x_min + x_max)*0.5;
+    for (size_t i = 0; i < n; ++i){
+        x = x_min + i*(x_max-x_min)/(n-1);
+        gauss(i) = exp(-(x-mu)*(x-mu)/2./sig/sig)/sqrt(2*M_PI)/sig;
+    }
+    return gauss;
 }
 
 

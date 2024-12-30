@@ -8,8 +8,8 @@ using namespace std::chrono;
 
 int main(){
 
-    // @TODO: ALL OUTPUT AND INPUT TO .CSV FORMAT, USE SAVE/LOAD FUNCTIONS
-    // @TODO: Parametr input from json file?
+    /// TODO: ALL OUTPUT AND INPUT TO .CSV FORMAT, USE SAVE/LOAD FUNCTIONS
+    /// TODO: Parametr input from json file?
 
     // omp_set_dynamic(0);
     // omp_set_num_threads(1);
@@ -98,9 +98,9 @@ int main(){
     //
     // Boltzmann
 	//
-    cout<<"# Solving BTE"<<endl;
-    f.solveWignerEq();
-    f.saveWignerFun();
+    // cout<<"# Solving BTE"<<endl;
+    // f.solveWignerEq();
+    // f.saveWignerFun();
 
 	//
     // Wave packet time evolution
@@ -118,6 +118,15 @@ int main(){
 	*/
 
     //
+    // Poisson equation
+    //
+    // cout<<"# Solving Poisson equation"<<endl;
+    // f.solvePoissonEq();
+    // f.savePotential();
+    Poisson1D::testPoisson();
+
+
+    //
     // Boltzmann-Poisson
 	//
 	/*
@@ -131,8 +140,8 @@ int main(){
     //
     // Schrödinger equation
 	//
-    cout<<"# Solving Schrödinger equation"<<endl;
-    f.solveSchrEq();
+    // cout<<"# Solving Schrödinger equation"<<endl;
+    // f.solveSchrEq();
 
     //
     // Printing and saving results to files located it "OutData" folder

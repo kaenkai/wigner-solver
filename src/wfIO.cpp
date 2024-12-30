@@ -366,7 +366,6 @@ void WignerFunction::saveTest() {
 
 
 void WignerFunction::printResults() {
-	// @TODO: Comments!
     double curr = calcCurr();
     calcCD_X(), calcCD_K();
 	// cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;

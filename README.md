@@ -1,4 +1,4 @@
-# WignerSolver ver. 0.241229
+# WignerSolver ver. 0.241230
 
 Program for solving Boltzmann-Poisson and Wigner-Poisson set of equations.
 

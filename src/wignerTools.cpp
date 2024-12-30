@@ -440,7 +440,7 @@ void WignerFunction::setBoundCond(){
             else if (bcType_ == 4 || bcType_ == -4)
                 for (size_t j=0; j<nk_; ++j)
                     bc_(j) = voigt(k_(j));
-            // @TODO: Armadillo convolution
+            /// TODO: Armadillo convolution
             // else if (bcType_ == 4)
             //      a = (nk_, arma::fill::zeros), b = (nk_, arma::fill::zeros), c;
             //     for (size_t j=0; j<nk_; ++j) {
@@ -824,7 +824,7 @@ void WignerFunction::calcMobility() {
     for (size_t i = 0; i < nx_; ++i)
         cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
             <<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
-            */
+    */
 
     // Average mobility
     double mob_av = 0;

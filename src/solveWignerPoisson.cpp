@@ -4,7 +4,7 @@
 
 
 void WignerFunction::solveWignerPoisson
-	(double u_bias, double i_alpha, double i_beta, size_t i_n_max, bool timeDependent){
+	(double u_bias, double i_alpha, double beta, size_t i_n_max, bool timeDependent){
 
     arma::vec j0(nx_, arma::fill::zeros), j1(nx_, arma::fill::zeros);
     arma::vec dj(nx_, arma::fill::zeros);
@@ -28,13 +28,11 @@ void WignerFunction::solveWignerPoisson
 	//
 	// Setting up Poisson solver
     Poisson1D p(nx_, dx_);  // Setting up Poisson solver
-    p.pBC_D_ = true, p.pBC_vN_ = false;  // Poisson BC type (Dirichlet / von Neumann)
-    p.dirichletL_ = u_bias/2., p.dirichletR_ = -u_bias/2.;  // Dirichlet BC
-    p.neumannL_ = 0, p.neumannR_ = 0;  // von Neumann BC
-    p.epsilonR_ = epsilonR_, p.temp_ = temp_;   // Permittivity and temperature
+    p.set_boundary_conditions(u_bias/2., -u_bias/2.);  // Dirichlet BC
+    p.set_epsilonR(epsilonR_), p.set_temp(temp_);   // Permittivity and temperature
 	// p.uNew_ = uStart_, p.uOld_ = uStart_;  // Starting potential values
     p.uNew_.zeros(), p.uOld_.zeros(); 
-    p.beta_ = i_beta;  // Potential mixing parameter
+    p.set_beta(beta);  // Potential mixing parameter
 
 	//
 	// Doping profile
@@ -62,7 +60,7 @@ void WignerFunction::solveWignerPoisson
 	// 		}
 	// }
 
-	// @TODO: Pointers to functions
+	/// TODO: Pointers to functions
 
     std::ofstream poisson_step("OutData/poisson_step.out");
     poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
@@ -82,7 +80,7 @@ void WignerFunction::solveWignerPoisson
 	}
     for ( size_t n_it = 0; n_it < n_max; ++n_it ) {
 
-		// TODO: Change order (BTE -> PE)
+		/// TODO: Change order (BTE -> PE)
 
 		//
 		// Solve Poisson EQ

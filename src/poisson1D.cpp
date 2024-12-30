@@ -1,13 +1,16 @@
 #include "lib.hpp"
 #include "poisson1D.hpp"
 
-void Poisson1D::solve() { solve_tridiag(); }  // solve_gummel solve_tridiag
+/// Wrapper for Poisson equation solver
+void Poisson1D::solve() { solve_gummel(); }  
+// solve_gummel solve_tridiag
+/// TODO: switching method through a parameter
 
+/// Solving Poisson equation using Gummel algorithm
 void Poisson1D::solve_gummel() {
-    // Solving Poisson equation using Gummel algorithm
 
     double epsilon = epsilonR_/4./M_PI;
-    double c = h_*h_/epsilon;
+    double c = -h_*h_/epsilon;
 
     // P_i
 
@@ -46,9 +49,8 @@ void Poisson1D::solve_gummel() {
 
 }
 
-
+/// Solving Poisson equation using tridiagonal matrix
 void Poisson1D::solve_tridiag() {
-    // Solving Poisson equation using tridiagonal matrix
 
     double epsilon = epsilonR_/4./M_PI;
 
@@ -58,26 +60,21 @@ void Poisson1D::solve_tridiag() {
         if (i > 0) A(i,i-1) = 1;
         if (i < nx_-1) A(i,i+1) = 1;
     }
-
-    // arma::vec b(nx_, arma::fill::ones); b.fill(-2.);  // Diagonal
-    // arma::vec c(nx_, arma::fill::ones);  // Upper diagonal
-    // arma::vec a(nx_, arma::fill::ones);  // Lower diagonal
     arma::vec d = rho_;
     arma::vec x(nx_, arma::fill::zeros);  // A*x = d
 
     for (size_t i=nx_; i--;)
-        d(i) *= h_*h_/epsilon;
+        d(i) *= -h_*h_/epsilon;
 
     // Dirichlet BC
-    if (pBC_D_)
-        d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
+    d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
 
     // von Neumann BC
-    // TODO: Fix it!
-    if (pBC_vN_) {
-        A(1, 1) = -1, A(nx_-1, nx_-1) = -1;
-        d(0) -= h_*neumannL_, d(nx_-1) += h_*neumannR_;
-    }
+    /// TODO: implement von Neumann BC
+    // if (pBC_vN_) {
+    //     A(1, 1) = -1, A(nx_-1, nx_-1) = -1;
+    //     d(0) -= h_*neumannL_, d(nx_-1) += h_*neumannR_;
+    // }
 
     arma::superlu_opts opts;
     opts.symmetric = true;
@@ -89,52 +86,55 @@ void Poisson1D::solve_tridiag() {
 
     arma::spsolve(x, A, d, "superlu", opts);
 
-    // arma::vec r, s;
-    // r = A*x-d, s = arma::abs(A)*arma::abs(x)+arma::abs(d);
-    // double berr = max(abs(r)/s);
-    // cout<<"BERR = "<<berr<<endl;
+    /*
+    // Old tridiagonal matrix system solution
+    arma::vec b(nx_, arma::fill::ones); b.fill(-2.);  // Diagonal
+    arma::vec c(nx_, arma::fill::ones);  // Upper diagonal
+    arma::vec a(nx_, arma::fill::ones);  // Lower diagonal
+    arma::vec r, s;
+    r = A*x-d, s = arma::abs(A)*arma::abs(x)+arma::abs(d);
+    double berr = max(abs(r)/s);
+    cout<<"BERR = "<<berr<<endl;
+    c(0) /= b(0);
+    d(0) /= b(0); 
+    double m;
+    for (size_t i=1; i<nx_; ++i) {
+        m = 1./(b(i) - a(i)*c(i-1));
+        c(i) *= m;
+        d(i) = (d(i) - a(i)*d(i-1)) * m;
+    }
+    x(nx_-1) = d(nx_-1);
+    for (size_t i=nx_-2; i--;)
+        x(i) = d(i) - c(i)*x(i+1);
+    x(0) = d(0) - c(0)*x(1);
+    uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
+    */
 
-    // c(0) /= b(0);
-    // d(0) /= b(0);
-    //
-    // double m;
-    // for (size_t i=1; i<nx_; ++i) {
-    //     m = 1./(b(i) - a(i)*c(i-1));
-    //     c(i) *= m;
-    //     d(i) = (d(i) - a(i)*d(i-1)) * m;
-    // }
-    //
-    // x(nx_-1) = d(nx_-1);
-    // for (size_t i=nx_-2; i--;)
-    //     x(i) = d(i) - c(i)*x(i+1);
-    // x(0) = d(0) - c(0)*x(1);
-
-    // uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
     uNew_ = x;
     du_ = uNew_ - uOld_;
 
 }
 
-
+/// Test function for Poisson equation
 void Poisson1D::testPoisson() {
 
-    double sigma = -1e-3; // 10^-3 C/m^2
+    Poisson1D p(200, 1/AU_nm);
+    double sigma = -1E-3 * 1E-6;  // 1E-6: 1/m^2 --> 1/cm^2
+    double x_min = -100./AU_nm;
+    // double x_max = 100./AU_nm;
+    // rho_ = sigma*gaussian_dist(x_min, x_max, h_*10, nx_) * AU_cm3/E0;
+    p.rho_(p.get_nx()/2) = sigma/(p.get_h()*AU_m) * AU_cm3/E0;
 
-    rho_(nx_/2) = sigma/(h_*AU_m)*1e-6;
-    rho_(nx_/2) *= AU_cm3/E0;  // SI -> AU
+    p.set_boundary_conditions(5.65/AU_eV, 5.65/AU_eV);
+    p.epsilonR_ = 1.;
 
-    dirichletL_ = -5.64717/AU_eV;
-    dirichletR_ = -5.64717/AU_eV;
-    epsilonR_ = 1;
+    p.solve();
 
-    solve();
-
-    cout<<"# sigma = "<<sigma<<" dirichletL "<<dirichletL_<<" dirichletR "<<dirichletR_<<" n "<<nx_<<" h "<<h_<<endl;
-    for (size_t i = 0; i < nx_; ++i)
-        cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
-
-    // Run example:
-    // Poisson1D p(200, 1./AU_nm);
-    // p.testPoisson();
+    cout<<"# sigma = "<<sigma*E0/AU_cm3
+        <<", dirichletL [eV] "<<p.get_dirichletL()*AU_eV<<", dirichletR [eV] "<<p.get_dirichletR()*AU_eV
+        <<", n "<<p.get_nx()<<", h [nm] "<<p.get_h()*AU_nm<<endl;
+    for (size_t i = 0; i < p.get_nx(); ++i)
+        cout<<(x_min + i*p.get_h())*AU_nm<<' '<<p.uNew_(i)*AU_eV<<' '<<p.rho_(i)*E0/AU_cm3<<endl;
+    // cout<<calcInt(gaussian_dist(-1., 1., 0.1, 100), 0.1)<<endl;
 
 }

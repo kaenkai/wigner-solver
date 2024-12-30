@@ -19,8 +19,17 @@ class Poisson1D {
             pFun_ = arma::vec(nx_, arma::fill::zeros);
             epsilonR_ = 1, temp_ = 300, beta_ = 1;
             dirichletL_ = 0, dirichletR_ = 0;
-            neumannL_ = 0, neumannR_ = 0;
-            pBC_D_ = true, pBC_vN_ = false;
+        }
+        Poisson1D() : nx_ (100), h_ (1.) {
+            rho_ = arma::vec(nx_, arma::fill::zeros);
+            nE_ = arma::vec(nx_, arma::fill::zeros);
+            uOld_ = arma::vec(nx_, arma::fill::zeros);
+            uNew_ = arma::vec(nx_, arma::fill::zeros);
+            du_ = arma::vec(nx_, arma::fill::zeros);
+            dPu_ = arma::sp_mat(nx_, nx_);
+            pFun_ = arma::vec(nx_, arma::fill::zeros);
+            epsilonR_ = 1, temp_ = 300, beta_ = 1;
+            dirichletL_ = 0, dirichletR_ = 0;
         }
         ~Poisson1D(){};
 
@@ -28,15 +37,27 @@ class Poisson1D {
         void solve_gummel();
         void solve_tridiag();
 
-        void testPoisson();
+        void set_boundary_conditions(double dirichletL, double dirichletR) {
+            dirichletL_ = dirichletL;
+            dirichletR_ = dirichletR;
+        };
+        void set_temp(double temp) {temp_ = temp;};
+        void set_epsilonR(double epsilonR) {epsilonR_ = epsilonR;};
+        void set_beta(double beta) {beta_ = beta;};
+        void set_rho(arma::vec rho) {rho_ = rho;};
+        void set_nE(arma::vec nE) {nE_ = nE;};
+        void set_uOld(arma::vec uOld) {uOld_ = uOld;};
+        void set_uNew(arma::vec uNew) {uNew_ = uNew;};
 
-        size_t nx_;
-        double h_;
-        double dirichletL_, dirichletR_;
-        double neumannL_, neumannR_;
-        bool pBC_D_, pBC_vN_;
-        double epsilonR_, temp_;
-        double beta_;  // potential mixing
+        double get_h() {return h_;};
+        size_t get_nx() {return nx_;};
+        double get_epsilonR() {return epsilonR_;};
+        double get_temp() {return temp_;};
+        double get_beta() {return beta_;};
+        double get_dirichletL() {return dirichletL_;};
+        double get_dirichletR() {return dirichletR_;};
+
+        static void testPoisson();
 
         arma::vec rho_;
         arma::vec nE_;
@@ -47,6 +68,13 @@ class Poisson1D {
         arma::vec pFun_;
         arma::sp_mat dPu_;
 
+    private:
+        size_t nx_;
+        double h_;
+        double dirichletL_, dirichletR_;
+        double epsilonR_, temp_;
+        double beta_;  // potential mixing
+        
 };
 
 # endif

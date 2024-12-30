@@ -3,7 +3,7 @@
 
 #include "lib.hpp"
 
-// #################### klasa WignerFunction ####################
+/// Wigener function class
 class WignerFunction{
 
     size_t nx_;

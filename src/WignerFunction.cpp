@@ -22,7 +22,7 @@ void WignerFunction::solveWignerEq(){
     // setBoundCond();
     // setEquilibriumFunction();
 
-    // @TODO: OpenMP parallel calculations
+    /// TODO: OpenMP parallel calculations
     #pragma omp parallel for collapse(2) shared(a_, b_)
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j) {
@@ -115,6 +115,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
     double k = k_(j), bc = bc_(j);
     if (diffSch_K_ == "CDS1") {
         // CDS1
+        /// TODO:implement CDS2?
         double C = k/m_/dx_/2.;
         double B = bc*C;
         if (dt > 0) C *= dt/2., B *= dt;
@@ -257,6 +258,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
     }
     else if (diffSch_K_ == "UDS4") {
         // UDS4
+        /// TODO: check if implemented correctly
         double C = k/m_/dx_/12.;
         double B = bc*C;
         if (dt > 0) C *= dt/2., B *= dt;
@@ -411,7 +413,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
     size_t r = i*nk_ + j;
     if (useNLP_) {
         // Non-local potential
-        // @TODO: Armadillo FFT
+        /// TODO: Armadillo FFT
         size_t v;
         double sum, u1, u2;
         double C;
