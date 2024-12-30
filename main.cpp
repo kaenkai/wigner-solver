@@ -120,9 +120,7 @@ int main(){
     //
     // Poisson equation
     //
-    // cout<<"# Solving Poisson equation"<<endl;
-    // f.solvePoissonEq();
-    // f.savePotential();
+    cout<<"# Solving Poisson equation"<<endl;
     Poisson1D::testPoisson();
 
 

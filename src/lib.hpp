@@ -55,6 +55,8 @@ double const ND {2E18};  // Donor concentration [cm^-3]
 double const AU_eV {27.211386245988};  // Hartree energy [eV]
 double const AU_nm {0.0529177210903};  // Bohr radius [nm]
 double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
+double const AU_m2 {AU_m*AU_m};  // [cm**2]  (AU_nm*1e-7)**2
+double const AU_m3 {AU_m*AU_m*AU_m};  // [cm**3]  (AU_nm*1e-7)**3
 double const AU_cm {AU_m*1e2};  // [cm]
 double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
 double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
@@ -273,16 +275,17 @@ arma::vec calcThirdDer(arma::vec f, T h){
  * @param x_max Maximum value of x
  * @param sig   Standard deviation
  * @param n     Number of points
+ * @param A     Amplitude
  * @return arma::vec Gaussian distribution
 */
 template <class T>
-arma::vec gaussian_dist(T x_min = 0, T x_max = 1, T sig = 1, size_t n = 100){
+arma::vec gaussian_dist(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t n = 100){
     arma::vec gauss(n, arma::fill::zeros);
     double x = 0;
     double mu = (x_min + x_max)*0.5;
     for (size_t i = 0; i < n; ++i){
         x = x_min + i*(x_max-x_min)/(n-1);
-        gauss(i) = exp(-(x-mu)*(x-mu)/2./sig/sig)/sqrt(2*M_PI)/sig;
+        gauss(i) = exp(-(x-mu)*(x-mu)/2./sig/sig) * A;
     }
     return gauss;
 }

@@ -2,15 +2,18 @@
 #include "poisson1D.hpp"
 
 /// Wrapper for Poisson equation solver
-void Poisson1D::solve() { solve_gummel(); }  
+void Poisson1D::solve() { solve_tridiag(); }  
 // solve_gummel solve_tridiag
 /// TODO: switching method through a parameter
 
-/// Solving Poisson equation using Gummel algorithm
+/**
+ * Solving Poisson equation using Gummel algorithm
+ * @see Biegel, B. A. & Plummer, J. D. Phys. Rev. B 54, 8070–8082 (1996).
+ */
 void Poisson1D::solve_gummel() {
 
     double epsilon = epsilonR_/4./M_PI;
-    double c = -h_*h_/epsilon;
+    double c = h_*h_/epsilon;
 
     // P_i
 
@@ -43,9 +46,7 @@ void Poisson1D::solve_gummel() {
     settings.symmetric = true;
     // settings.refine = superlu_opts::REF_EXTRA;
     arma::spsolve(x, dPu_, pFun_, "superlu", settings);
-
-    du_ = x*beta_;
-    uNew_ = uOld_ + du_;
+    uNew_ = uOld_ + x;
 
 }
 
@@ -64,7 +65,7 @@ void Poisson1D::solve_tridiag() {
     arma::vec x(nx_, arma::fill::zeros);  // A*x = d
 
     for (size_t i=nx_; i--;)
-        d(i) *= -h_*h_/epsilon;
+        d(i) *= h_*h_/epsilon;
 
     // Dirichlet BC
     d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
@@ -85,56 +86,47 @@ void Poisson1D::solve_tridiag() {
     opts.pivot_thresh = 0;
 
     arma::spsolve(x, A, d, "superlu", opts);
-
-    /*
-    // Old tridiagonal matrix system solution
-    arma::vec b(nx_, arma::fill::ones); b.fill(-2.);  // Diagonal
-    arma::vec c(nx_, arma::fill::ones);  // Upper diagonal
-    arma::vec a(nx_, arma::fill::ones);  // Lower diagonal
-    arma::vec r, s;
-    r = A*x-d, s = arma::abs(A)*arma::abs(x)+arma::abs(d);
-    double berr = max(abs(r)/s);
-    cout<<"BERR = "<<berr<<endl;
-    c(0) /= b(0);
-    d(0) /= b(0); 
-    double m;
-    for (size_t i=1; i<nx_; ++i) {
-        m = 1./(b(i) - a(i)*c(i-1));
-        c(i) *= m;
-        d(i) = (d(i) - a(i)*d(i-1)) * m;
-    }
-    x(nx_-1) = d(nx_-1);
-    for (size_t i=nx_-2; i--;)
-        x(i) = d(i) - c(i)*x(i+1);
-    x(0) = d(0) - c(0)*x(1);
-    uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
-    */
-
     uNew_ = x;
     du_ = uNew_ - uOld_;
 
 }
 
-/// Test function for Poisson equation
+/**
+ * Static method for tesing Poisson solver.
+ * Solves 1D Poisson equation with Dirichlet boundary conditions for
+ * an uniformly charged infinite plane located at 0.
+ */
 void Poisson1D::testPoisson() {
-
-    Poisson1D p(200, 1/AU_nm);
-    double sigma = -1E-3 * 1E-6;  // 1E-6: 1/m^2 --> 1/cm^2
-    double x_min = -100./AU_nm;
-    // double x_max = 100./AU_nm;
-    // rho_ = sigma*gaussian_dist(x_min, x_max, h_*10, nx_) * AU_cm3/E0;
-    p.rho_(p.get_nx()/2) = sigma/(p.get_h()*AU_m) * AU_cm3/E0;
-
-    p.set_boundary_conditions(5.65/AU_eV, 5.65/AU_eV);
-    p.epsilonR_ = 1.;
-
+    // Create grid from 0 to 100nm with 1nm spacing
+    Poisson1D p(101, 1/AU_nm);
+    
+    // Set sheet charge density to -0.001 C/m^2 
+    double sigma = -1E-3 * AU_m2/E0;
+    
+    // Place the sheet charge at x=0 (middle of grid)
+    p.rho_(0) = sigma/(1./AU_nm);
+    arma::vec x = arma::linspace(0, 100/AU_nm, p.get_nx());
+    
+    // Set boundary conditions:
+    // At x=0nm: V = 0 
+    // At x=100nm: V = -5.65 eV
+    p.set_boundary_conditions(0, -5.647/AU_eV);
+    
     p.solve();
 
-    cout<<"# sigma = "<<sigma*E0/AU_cm3
-        <<", dirichletL [eV] "<<p.get_dirichletL()*AU_eV<<", dirichletR [eV] "<<p.get_dirichletR()*AU_eV
-        <<", n "<<p.get_nx()<<", h [nm] "<<p.get_h()*AU_nm<<endl;
-    for (size_t i = 0; i < p.get_nx(); ++i)
-        cout<<(x_min + i*p.get_h())*AU_nm<<' '<<p.uNew_(i)*AU_eV<<' '<<p.rho_(i)*E0/AU_cm3<<endl;
-    // cout<<calcInt(gaussian_dist(-1., 1., 0.1, 100), 0.1)<<endl;
+    // Output results
+    cout << "# Sheet charge density = " << sigma*E0/AU_m2 << " C/m^2" 
+         << ", Left BC (x=-100nm) = " << p.get_dirichletL()*AU_eV << " eV"
+         << ", Right BC (x=+100nm) = " << p.get_dirichletR()*AU_eV << " eV"
+         << ", Grid points = " << p.get_nx() 
+         << ", Spacing = " << p.get_h()*AU_nm << " nm" << endl;
+    // Output x [nm], potential [eV], charge density [C/cm^3]
+    for (size_t i = 0; i < p.get_nx(); ++i) {
+        cout << x(i)*AU_nm << ' ' << p.uNew_(i)*AU_eV << ' ' << p.rho_(i)*E0/AU_cm3 << endl;
+    }
+
+    // Linear fit results
+    arma::vec fit = arma::polyfit(x, p.uNew_, 1);
+    cout<<"Linear fit results: "<<fit(0)*AU_eV/AU_nm<<" "<<fit(1)*AU_eV<<endl;
 
 }

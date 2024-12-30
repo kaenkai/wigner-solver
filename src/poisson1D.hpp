@@ -41,13 +41,9 @@ class Poisson1D {
             dirichletL_ = dirichletL;
             dirichletR_ = dirichletR;
         };
-        void set_temp(double temp) {temp_ = temp;};
         void set_epsilonR(double epsilonR) {epsilonR_ = epsilonR;};
+        void set_temp(double temp) {temp_ = temp;};
         void set_beta(double beta) {beta_ = beta;};
-        void set_rho(arma::vec rho) {rho_ = rho;};
-        void set_nE(arma::vec nE) {nE_ = nE;};
-        void set_uOld(arma::vec uOld) {uOld_ = uOld;};
-        void set_uNew(arma::vec uNew) {uNew_ = uNew;};
 
         double get_h() {return h_;};
         size_t get_nx() {return nx_;};
