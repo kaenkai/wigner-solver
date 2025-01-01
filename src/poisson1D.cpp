@@ -98,19 +98,19 @@ void Poisson1D::solve_tridiag() {
  */
 void Poisson1D::testPoisson() {
     // Create grid from 0 to 100nm with 1nm spacing
-    Poisson1D p(101, 1/AU_nm);
+    Poisson1D p(201, 1/AU_nm);
     
     // Set sheet charge density to -0.001 C/m^2 
     double sigma = -1E-3 * AU_m2/E0;
     
     // Place the sheet charge at x=0 (middle of grid)
-    p.rho_(0) = sigma/(1./AU_nm);
-    arma::vec x = arma::linspace(0, 100/AU_nm, p.get_nx());
+    p.rho_(p.get_nx()/2) = sigma/(p.get_h());
+    arma::vec x = arma::linspace(-100/AU_nm, 100/AU_nm, p.get_nx());
     
     // Set boundary conditions:
     // At x=0nm: V = 0 
     // At x=100nm: V = -5.65 eV
-    p.set_boundary_conditions(0, -5.647/AU_eV);
+    p.set_boundary_conditions(-5.647/AU_eV, -5.647/AU_eV);
     
     p.solve();
 

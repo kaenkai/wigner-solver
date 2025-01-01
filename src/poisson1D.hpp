@@ -38,8 +38,8 @@ class Poisson1D {
         void solve_tridiag();
 
         void set_boundary_conditions(double dirichletL, double dirichletR) {
-            dirichletL_ = dirichletL;
-            dirichletR_ = dirichletR;
+            this -> dirichletL_ = dirichletL;
+            this -> dirichletR_ = dirichletR;
         };
         void set_epsilonR(double epsilonR) {epsilonR_ = epsilonR;};
         void set_temp(double temp) {temp_ = temp;};
