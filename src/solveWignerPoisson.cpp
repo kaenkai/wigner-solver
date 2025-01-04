@@ -24,7 +24,6 @@ void WignerFunction::solveWignerPoisson
     double dJ_x = 0, dU_x = 0, dRho_x;  // Maximum and minimum values
     double alpha = i_alpha;  // Density mixing parameter
 
-
 	//
 	// Setting up Poisson solver
     Poisson1D p(nx_, dx_);  // Setting up Poisson solver
@@ -36,9 +35,7 @@ void WignerFunction::solveWignerPoisson
 
 	//
 	// Doping profile
-    double s = 0.01;
-    for (size_t i=0; i<nx_; ++i)
-	    nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+    set_doping_profile(0.01);
 
 	//
 	// Initial conditions

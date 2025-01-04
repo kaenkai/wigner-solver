@@ -1,22 +1,16 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
-// ############################## Equilibrium WF ##############################
 
-void WignerFunction::initEq() {
+/// Solve Wigner equation
+void WignerFunction::solveWignerEq(){
+
     setBoundCond();
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
     d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
-}
-
-// ############################## Numerical WF solution ##############################
-
-void WignerFunction::solveWignerEq(){
-
-    initEq();
     // readPotential();
 
     // setBoundCond();
@@ -74,10 +68,16 @@ void WignerFunction::solveWignerEq(){
 }
 
 
-// ############################## WF time evolution ##############################
+/// Wigner function time evolution
 void WignerFunction::solveTimeEv(){
 
-    initEq();
+    setBoundCond();
+    // setEquilibriumFunction();
+    u_ = uB_ + uC_;
+    du_ = calcFirstDer(u_, dx_);
+    d3u_ = calcThirdDer(u_, dx_);
+    a_.zeros(), b_.zeros();
+    // readPotential();
 
     // #pragma omp parallel for collapse(2)
     for (size_t i=nx_; i--;) {
@@ -108,7 +108,7 @@ void WignerFunction::solveTimeEv(){
 }
 
 
-// #################### diffusionTerm ####################
+/// Diffusion term
 void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
     // Fills Boltzmann equation matrix with diffusion term
     size_t r = i*nk_ + j;
@@ -407,7 +407,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 }
 
 
-// #################### Drift term ####################
+/// Drift term
 void WignerFunction::driftTerm(size_t i, size_t j, double dt){
     // Fills Boltzmann equation matrix with drift terms
     size_t r = i*nk_ + j;
@@ -669,7 +669,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
     }
 }
 
-// #################### scatteringTerm ####################
+/// Scattering term
 inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
     size_t r = i*nk_ + j;
     double cR = rR_, cM = rM_, cL = lambda_/dk_/dk_;
@@ -787,7 +787,7 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 }
 
 
-// #################### Quantum correction term ####################
+/// Quantum correction term
 void WignerFunction::quantumCorrTerm(size_t i, size_t j, double dt){
     // Fills Boltzmann equation matrix with drift terms
     size_t r = i*nk_ + j;
@@ -867,6 +867,7 @@ void WignerFunction::quantumCorrTerm(size_t i, size_t j, double dt){
 }
 
 
+/// Solves 1D Schrodinger equation
 void WignerFunction::solveSchrEq(){
     u_ = uB_ + uC_;
     size_t n = nx_;

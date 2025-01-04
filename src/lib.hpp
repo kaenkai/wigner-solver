@@ -290,7 +290,6 @@ arma::vec gaussian_dist(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t
     return gauss;
 }
 
-
 double calcFermiEn(double, double, double);
 std::map<std::string, double> readParam(std::string);
 

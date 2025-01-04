@@ -375,6 +375,4 @@ void WignerFunction::printResults() {
     cout<<"# Integral[dp](f_BC): "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3<<" cm^-3."<<endl;  // /2./M_PI
     cout<<"# Given value: "<<ND<<" cm^-3."<<endl;
 	// cout<<"# Value from a function: "<<cdX_/AU_cm3<<" cm^-3."<<endl;
-
-
 }

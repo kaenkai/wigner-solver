@@ -1,8 +1,8 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
-/// Sets up equilibrium function
-/// If read_data = true, reads equilibrium from input_file
+
+/// Sets up equilibrium function, if read_data = true, reads equilibrium from input_file
 void WignerFunction::setEquilibriumFunction(std::string input_file = "", bool read_data = false){
     // solveWignerEq();
     // calcCD_X();
@@ -180,8 +180,8 @@ arma::vec WignerFunction::calcCD_K(){
 }
 
 
+/// Calculates density function norm (integral over whole space)
 double WignerFunction::calcNorm(){
-    // Calculates density function norm (integral over whole space)
     double sum_x = 0;
     double sum_k = 0;
     for (size_t i=nx_; i--;) {
@@ -255,6 +255,7 @@ double WignerFunction::calcEK2(){
 }
 
 
+/// Calculates standard deviation in k-space
 double WignerFunction::calcSDK(){
     double ev = 0, ev2 = 0, s_ev, s_ev2;
     /*
@@ -307,6 +308,7 @@ double WignerFunction::calcSDK(){
 }
 
 
+/// Calculates standard deviation in x-space
 double WignerFunction::calcSDX(){
     double ev = 0, ev2 = 0, s_ev, s_ev2;
     for (size_t i=0; i<nx_; ++i) {
@@ -332,25 +334,19 @@ double WignerFunction::calcSDX(){
 }
 
 
-/// Sets system potential as linear function
+/** 
+ * Sets system potential as linear drop from uBias/2 to -uBias/2
+ * @param uBias - potential bias
+*/ 
 void WignerFunction::setPotBias(double uBias) {
     uBias_ = uBias;
     uC_.zeros();
     double x;
-    // for (size_t i = 0; i < nx_; ++i) {
-    //     x = x_(i)-lC_;
-    //     if (x<0)
-    //         uC_(i) = 0;
-    //     else if (x>=0 && x<=lD_)
-    //         uC_(i) = -uBias_*x/lD_;
-    //     else if (x>lD_)
-    //         uC_(i) = -uBias_;
-    // }
     for (size_t i = 0; i < nx_; ++i) {
         x = x_(i);
         uC_(i) = uBias_*(0.5-x/l_);
     }
-}  // End of setPotBias
+}
 
 /** 
  * Adds gaussian barrier
@@ -404,20 +400,14 @@ void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
 }
 
 
-//
-//  WP evolution (no potential)
-//
-
+///  Wave packet time evolution analitical solution (no potential)
 double WignerFunction::wavePacket_TEV(double gwp_x0, double gwp_dx,
     double gwp_k0, double gwp_dk, double x, double k)
     { return exp( -(k-gwp_k0)*(k-gwp_k0)/2./gwp_dk/gwp_dk
         -(x-gwp_x0)*(x-gwp_x0)/2./gwp_dx/gwp_dx ) / M_PI; }
 
 
-//
-// Boundary conditions
-//
-
+/// Boundary conditions
 void WignerFunction::setBoundCond(){
     uL_ = uBias_BC_ ? uL_ + uBias_ : uL_;
     Gamma_ = rG_*.5;
@@ -509,6 +499,7 @@ double WignerFunction::maxwell_boltzmann(double k){;
     return c * ex;
 }
 
+
 /// Gaussian with sigma parameter
 double WignerFunction::gaussian_bc(double k){
     double m = m_;
@@ -539,8 +530,8 @@ inline double WignerFunction::sf_x(double mu, double x) {
 }
 
 
+/// Equilibrium function for electrons in contact
 double WignerFunction::eqFun_x(double mu, double x) {
-    // Equilibrium function for electrons in contact
     double m = m_;
     double kBT = KB/AU_eV*temp_;
     double c, ex;

@@ -169,8 +169,8 @@ public:
 
     ~WignerFunction(){}
 
-    double get_nx() { return nx_; }
-    double get_nk() { return nk_; }
+    size_t get_nx() { return nx_; }
+    size_t get_nk() { return nk_; }
     double get_dk() { return dk_; }
     double get_dx() { return dx_; }
     double get_l() { return l_; }
@@ -227,11 +227,23 @@ public:
     void set_bcType(int bcType) { bcType_ = bcType; }
     void set_lYZ(double lYZ) { lYZ_ = lYZ; }
     void set_part_num(double part_num) { part_num_ = part_num; }
-    void set_uC(arma::vec uC) { uC_ = uC; }
+    void set_uC(arma::vec uC) { 
+        uC_ = uC; 
+        u_ = uB_ + uC_;
+    }
     void set_wf(arma::mat f) { f_ = f; }
     void set_diffSch_K(std::string diffSch_K) { diffSch_K_ = diffSch_K; }
     void set_diffSch_P(std::string diffSch_P) { diffSch_P_ = diffSch_P; }
     void set_diffSch_J(std::string diffSch_J) { diffSch_J_ = diffSch_J; }
+
+    /** 
+     * Sets up doping profile
+     * @param s - smoothing parameter (0 - rectangular profile)
+    */
+    void set_doping_profile(double s = 0.01){
+        for (size_t i=0; i<nx_; ++i)
+            nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+    }
 
     void load_poisson_pot(std::string file) {
         uStart_.load(file);
@@ -259,7 +271,6 @@ public:
     void saveTest();
     void printResults();
 
-    void initEq();
     void solveWignerEq();
     void solveTimeEv();
     void solveWignerPoisson(double, double, double, size_t, bool);

@@ -17,7 +17,7 @@ int main(){
     // cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
 
     size_t nx = 200, nk = 200;
-    double lD = 1000, lC = 0/AU_nm;
+    double lD = 1000/AU_nm, lC = 250/AU_nm;
     double k_max = 0.05;  // -1, 0.15
 
     WignerFunction f(nx, lD, lC, nk, k_max);
@@ -69,12 +69,11 @@ int main(){
     // Setting up potential bias and barriers
 	//
     cout<<"# Setting up potential"<<endl;
-    f.set_uBias(0.0/AU_eV);
+    double u_bias = 0.0/AU_eV;
+    f.set_uBias(u_bias);
     // f.setPotBias(0.1/AU_eV);
-    //
     // f.addRectBarr(0.3/AU_eV, 300, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 700, 100, 10);
-    //
     // f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
     // f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
     // f.addGaussBarr(0.3/AU_eV, 500/AU_nm, 100/AU_nm);
@@ -89,18 +88,29 @@ int main(){
 	// if false Wigner/Boltzmann is solved for 0 bias and no dissipation
     // f.setEquilibriumFunction("OutData/wf_feq_BP.bin", true);
 
+    // Print siulation parameters
     f.printParam();
 
+    // Start calculation time
     high_resolution_clock::time_point t_start, t_end;
     duration<double> t_elapsed;
     t_start = high_resolution_clock::now();
 
     //
-    // Boltzmann
+    // Boltzmann-Poisson test
 	//
-    // cout<<"# Solving BTE"<<endl;
-    // f.solveWignerEq();
-    // f.saveWignerFun();
+    cout<<"## Solving BTE"<<endl;
+    f.solveWignerEq();
+    f.calcCD_X();
+    f.set_doping_profile(0.02);
+    //
+    Poisson1D p(f.get_nx(), f.get_dx());
+    p.set_epsilonR(f.get_epsilonR()), p.set_temp(f.get_temp());  // Permittivity and temperature
+    p.set_boundary_conditions(u_bias/2., -u_bias/2.);  // Dirichlet BC
+    p.rho_ = f.get_nD() - f.get_cdX();
+    p.solve();
+    f.set_uC(p.uNew_);
+    cout<<"## BTE done"<<endl;
 
 	//
     // Wave packet time evolution
@@ -118,10 +128,10 @@ int main(){
 	*/
 
     //
-    // Poisson equation
+    // Poisson equation test
     //
-    cout<<"# Solving Poisson equation"<<endl;
-    Poisson1D::testPoisson();
+    // cout<<"# Solving Poisson equation"<<endl;
+    // Poisson1D::testPoisson();
 
 
     //
@@ -144,6 +154,7 @@ int main(){
     //
     // Printing and saving results to files located it "OutData" folder
     //
+    f.saveWignerFun();
     f.saveTest();
     f.printResults();
 
