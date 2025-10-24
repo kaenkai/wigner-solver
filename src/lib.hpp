@@ -2,12 +2,10 @@
 #define LIB_H
 
 #include <iostream>
-#include <fstream>
 #include <cmath>
 #include <vector>
 #include <string>
 #include <ctime>
-#include <map>
 #include <iomanip>  // std::setw
 
 #include <omp.h>
@@ -204,27 +202,32 @@ class matrix {
 };
 
 
-//
-// Funkcje do liczenia całek i pochodnych
-// Definicje tych funkcji znajdują się w pliku wignerTools.cpp
-//
-
-
-/// Integral (Simpson rule)
+/**
+ * Integral (trapezoid)
+ * @param f (arma::vec) function
+ * @param h (T) integration step
+ * @return double integral
+*/
 template <class T>
 double calcInt(arma::vec f, T h){
     size_t n = f.size();
-    T ig = 0;
+    double ig = 0;
     for (size_t i=1; i<n/2; ++i)
-        // ig += (f(i-1) + f(i))*h/2.;  // trapezoid
-        ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;  // simpson
+        ig += (f(i-1) + f(i))*h/2.;  // trapezoid
+        // ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;  // simpson
     return ig;
 }
 
 
-/// First derivative
-template <class T>
-arma::vec calcFirstDer(arma::vec f, T h){
+/**
+ * First derivative (hybrid scheme)
+ * @param f (arma::vec) function
+ * @param h (T) differentiation step
+ * @return arma::vec first derivative
+ */
+ template <class T>
+ arma::vec calcFirstDer(arma::vec f, T h){
+    /// TODO: verify derivative scheme
     size_t n = f.size();
     arma::vec df(n, arma::fill::zeros);
     for (size_t i=2; i<n-2; ++i)
@@ -242,7 +245,12 @@ arma::vec calcFirstDer(arma::vec f, T h){
 }
 
 
-/// Second derivative
+/**
+ * Second derivative (hybrid scheme)
+ * @param f (arma::vec) function
+ * @param h (T) differentiation step
+ * @return arma::vec second derivative
+*/
 template <class T>
 arma::vec calcSecondDer(arma::vec f, T h){
     size_t n = f.size();
@@ -255,7 +263,12 @@ arma::vec calcSecondDer(arma::vec f, T h){
 }
 
 
-/// Third derivative
+/**
+ * Third derivative (hybrid scheme)
+ * @param f (arma::vec) function
+ * @param h (T) differentiation step
+ * @return arma::vec third derivative
+*/
 template <class T>
 arma::vec calcThirdDer(arma::vec f, T h){
     size_t n = f.size();

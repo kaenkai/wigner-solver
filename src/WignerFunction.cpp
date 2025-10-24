@@ -407,9 +407,8 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 }
 
 
-/// Drift term
+/// Drift term (Fills Boltzmann/Wigner equation matrix with drift terms)
 void WignerFunction::driftTerm(size_t i, size_t j, double dt){
-    // Fills Boltzmann equation matrix with drift terms
     size_t r = i*nk_ + j;
     if (useNLP_) {
         // Non-local potential
@@ -418,7 +417,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         double sum, u1, u2;
         double C;
         // #pragma omp parallel for
-        for (size_t l=0; l<nk_; l++){  // TODO: 0 -> 1 ?
+        for (size_t l=0; l<nk_; l++){
             v = i*nk_+l;
             if (v <= r) {
                 sum = 0;
@@ -444,10 +443,10 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         }  // end l loop
     }  // end if
     else {
-        // Classical force
+        // Classical force F
         if (diffSch_P_ == "CDS1") {
             // CDS1
-            double F = -du_(i);  // klasyczna siła równa -du/dx
+            double F = -du_(i);
             double C = F/dk_/2.;
             if (dt > 0) C *= dt/2.;
             if (F <= 0) {
@@ -473,7 +472,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         }
         else if (diffSch_P_ == "UDS1") {
             // UDS1
-            double F = -du_(i);  // klasyczna siła równa -du/dx
+            double F = -du_(i);
             double C = F/dk_;
             if (dt > 0) C *= dt/2.;
             if (F <= 0) {
@@ -499,7 +498,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         }
         else if (diffSch_P_ == "UDS2") {
             // UDS2
-            double F = -du_(i);  // klasyczna siła równa -du/dx
+            double F = -du_(i);
             double C = F/dk_/2.;
             if (dt > 0) C *= dt/2.;
             if (F <= 0) {
@@ -537,7 +536,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         }
         else if (diffSch_P_ == "UDS3") {
             // UDS3
-            double F = -du_(i);  // klasyczna siła równa -du/dx
+            double F = -du_(i);
             double C = F/dk_/6.;
             if (dt > 0) C *= dt/2.;
             if (F <= 0) {
@@ -589,7 +588,8 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
         }
         else if (diffSch_P_ == "HDS22") {
             // HDS22
-            double F = -du_(i);  // klasyczna siła równa -du/dx
+            /// TODO: alpha and beta significance
+            double F = -du_(i);
             double C = F/dk_/2.;
             if (dt > 0) C *= dt/2.;
             double alpha = 2., beta = 1.;
@@ -693,7 +693,7 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
     // #################### gamma term ####################
     double C = -rF_;
     if (dt > 0) C *= dt/2.;
-    double F = -du_(i);  // klasyczna siła równa -du/dx
+    double F = -du_(i);  // classical force equal to -du/dx
     // UDS1
     // C *= k_(j)/dk_;
     // a_(r,r) += C;
@@ -793,47 +793,6 @@ void WignerFunction::quantumCorrTerm(size_t i, size_t j, double dt){
     size_t r = i*nk_ + j;
     double C = d3u_(i)/dk_/dk_/dk_/24.;
     if (dt > 0) C *= dt/2.;
-    // // UDS2
-    // if (d3u_(i)<=0.) {
-    //     if (j==nk_-1) {
-    //         a_(r, r) += -C;
-    //     }
-    //     else if (j==nk_-2) {
-    //         a_(r, r) += -C;
-    //         a_(r, r+1) += 3*C;
-    //     }
-    //     else if (j==nk_-3) {
-    //         a_(r, r) += -C;
-    //         a_(r, r+1) += 3*C;
-    //         a_(r, r+2) += -3*C;
-    //     }
-    //     else {
-    //         a_(r, r) += -C;
-    //         a_(r, r+1) += 3*C;
-    //         a_(r, r+2) += -3*C;
-    //         a_(r, r+3) += C;
-    //     }
-    // }
-    // if (d3u_(i)>0.) {
-    //     if (j==0) {
-    //         a_(r, r) += C;
-    //     }
-    //     else if (j==1) {
-    //         a_(r, r) += C;
-    //         a_(r, r-1) += -3*C;
-    //     }
-    //     else if (j==2) {
-    //         a_(r, r) += C;
-    //         a_(r, r-1) += -3*C;
-    //         a_(r, r-2) += 3*C;
-    //     }
-    //     else {
-    //         a_(r, r) += C;
-    //         a_(r, r-1) += -3*C;
-    //         a_(r, r-2) += 3*C;
-    //         a_(r, r-3) += -C;
-    //     }
-    // }
     // CDS1
     if (j==nk_-1)
     {

@@ -28,7 +28,7 @@ std::map<std::string, double> readParam(std::string filename){
 		{"calc_mode", 0},
 		{"contact_temp", 77},
 		{"fermi_energy", .00316},  // 0.086 eV
-		{"dop_con_left", 0},  // TODO: 0 -> 2e18 in a.u.
+		{"dop_con_left", 0},
 		{"dop_con_right", 0},
 		{"effective_mass", 0.067},
 		{"device_lenght", 3780.72},  // 200 nm
@@ -39,8 +39,8 @@ std::map<std::string, double> readParam(std::string filename){
 		{"max_voltage", .0147},  // approx. 0.4 V
 		{"voltage_step_nr", 40},
 		{"courant_num", 1},
-		{"gwp_x0", -1},  // 22
-		{"gwp_dx", -1},  // 8
+		{"gwp_x0", -1},
+		{"gwp_dx", -1},
 		{"gwp_p0", -1},
 		{"gwp_dp", -1},
 		{"pot_type", 0},
@@ -84,10 +84,10 @@ std::map<std::string, double> readParam(std::string filename){
 }
 
 
+/**
+ * Saves Wigner function to wf.out, wf.bin, and wf.z (GLE format) files
+*/
 void WignerFunction::saveWignerFun() {
-	// Saves wigner function to a file readable by gnuplot (wf.out),
-	// a binary file (wf.bin) that may be loaded to a matrix later on
-	// and a *.z format readable by GLE
     std::ofstream wf_out("OutData/wf.out");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
@@ -136,43 +136,7 @@ void WignerFunction::readPotential(std::string input_file){
 		}
 	    input_pot.close();
 	}
-    uStart_.zeros();
     uStart_ = u;
-    std::ofstream test ("out_data/input_potential_test.out");
-    for (size_t i=0; i<x_.size(); ++i)
-	    test<<x_(i)<<' '<<uStart_(i)<<'\n';
-    test.close();
-	// if (x.size() != x_.size()){
-	//     double device_lenght = l_-2*lC_;
-	//     for (size_t p=0; p<x_.size(); ++p){
-	// 	    if (x_(p)<=x(0))
-	// 		    uStart_(p) = u(0);
-	//
-	// 	    else if (x_(p)>x(x.size()-1))
-	// 		    uStart_(p) = u(x.size()-1);
-	//
-	// 	    else {
-	// 		    for (size_t i=0; i<x.size()-1; ++i)
-	// 			    if (x_(p)>x(i) && x_(p)<=x(i+1))
-	// 				    uStart_(p) = u(i+1);
-	// 		}
-	//
-	// 	}
-	//     std::ofstream test ("out_data/potential.out");
-	//     for (size_t i=0; i<x_.size(); ++i)
-	// 	    test<<x_(i)<<' '<<u_(i)<<'\n';
-	//     test.close();
-	//     if (x(x.size()-1)>device_lenght)
-	// 	    cout<<"WARNING: Potential exceeds device lenght\n";
-	// }
-	// else{
-	//     for (size_t i=0; i<x.size(); ++i)
-	// 	    uStart_(i) = u(i);
-	//     std::ofstream test ("out_data/potential.out");
-	//     for (size_t_vec_d i=0; i<x_.size(); ++i)
-	// 	    test<<x_(i)<<' '<<uStart_(i)<<'\n';
-	//     test.close();
-	// }
 }
 
 

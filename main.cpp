@@ -4,8 +4,6 @@
 
 #include <chrono>
 
-using namespace std::chrono;
-
 int main(){
 
     /// TODO: ALL OUTPUT AND INPUT TO .CSV FORMAT, USE SAVE/LOAD FUNCTIONS
@@ -59,8 +57,8 @@ int main(){
     // Boundary conditions
 	//
     // 0 -> 0 (closed system, no carrier inflow)
-	// 1 -> SF, 2:4 -> splot with SF
-	// -1 -> Gauss, -2:-4 splot with Gauss
+	// 1 -> SF, 2:4 -> SF convolution
+	// -1 -> Gauss, -2:-4 -> Gauss function convolution
 	//
     cout<<"# Setting up BC"<<endl;
     f.set_bcType(1);
@@ -91,10 +89,10 @@ int main(){
     // Print siulation parameters
     f.printParam();
 
+    //
     // Start calculation time
-    high_resolution_clock::time_point t_start, t_end;
-    duration<double> t_elapsed;
-    t_start = high_resolution_clock::now();
+    //
+    auto t_start = std::chrono::steady_clock::now();
 
     //
     // Boltzmann-Poisson test
@@ -133,7 +131,6 @@ int main(){
     // cout<<"# Solving Poisson equation"<<endl;
     // Poisson1D::testPoisson();
 
-
     //
     // Boltzmann-Poisson
 	//
@@ -161,12 +158,10 @@ int main(){
     //
     // Evaluating calculation time
     //
-    t_end = high_resolution_clock::now();
-    t_elapsed =  duration_cast<duration<double>>(t_end - t_start);
-    if (t_elapsed.count() < 60)
-        cout<<"# RUN TIME: "<<t_elapsed.count()<<" s, "<<endl;
-    else
-        cout<<"# RUN TIME: "<<t_elapsed.count()/60.<<" min, "<<endl;
+    auto t_end = std::chrono::steady_clock::now();
+    auto t_elapsed =  std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start);
+    cout<<"# RUN TIME: "<<t_elapsed.count()<<" ms";
+    cout<<" ("<<int(t_elapsed.count()/1000./60.)<<" min "<<int(t_elapsed.count()/1000.)%60<<" s "<<int(t_elapsed.count())%1000<<" ms)"<<endl;
 
     return 0;
 
