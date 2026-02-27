@@ -7,25 +7,18 @@
 #include <string>
 #include <ctime>
 #include <iomanip>  // std::setw
-
 #include <omp.h>
+#include <armadillo>
 
-#define ARMA_USE_SUPERLU 1
+// #define ARMA_USE_SUPERLU 1
 // #define ARMA_OPENMP_THREADS 2
 // #define ARMA_PRINT_ERRORS 1
 // #define ARMA_WARN_LEVEL 3
 // #define OMP_NUM_THREADS 2
 
-#include <armadillo>
-
-// using namespace std;
 using std::cout;
 using std::endl;
 using std::setw;
-// using namespace arma;
-
-// ############################## GLOBAL VARIABLES ##############################
-// #define N_THREADS 4
 
 // ############################## CONSTANTS ##############################
 /// TODO: put into a namespace (maybe)
@@ -39,7 +32,7 @@ double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
 double const M0 {9.1093837015E-31};  // Electron mass [kg]
 double const EPS0 {8.8541878128E-12};  // Electric constant
 
-// ############################## SYSTEM CONSTANTS ##############################
+// ############################## DEFAULT SYSTEM PARAMETERS ##############################
 
 double const A_GaAs {0.565};  // GaAs lattice constant [nm]
 double const EPS_GaAs {13.1};  // GaAs relative permittivity
@@ -62,55 +55,7 @@ double const AU_s {HBAR_eV/AU_eV};  // Time [s]
 double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
 double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
 
-// double const AU_m {4.*M_PI*EPS0*HBAR_J*HBAR_J/M0/E0/E0};  // Bohr radius [m] also 1./(4.*M_PI*EPS0*AU_eV)
-// double const AU_eV {HBAR_J*HBAR_J/M0/AU_m/AU_m*1/E0 };  // Hartree energy [eV] (*1/E0: J -> eV)
-// double const AU_s {HBAR_eV/AU_eV};  // Time [s]
-// double const AU_nm {AU_m*1E9};  // Bohr radius [nm]
-// double const AU_cm {AU_m*1e2};  // [cm]
-// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-// double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
-// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
-
-// ############################## atomic units - numberic ##############################
-
-/*
-double const AU_eV {27.211386245988};  // Hartree energy [eV]
-double const AU_nm {0.0529177210903};  // Bohr radius [nm]
-double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
-double const AU_cm {AU_m*1e2};  // [cm]
-double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-double const AU_s {2.4188843265857225E-17}; // Time [s]
-double const AU_A {6.623618237509881E-3};  // [A]
-double const AU_Acm2 {2.365337010944052E14};  // [A/cm**2]
-*/
-
-// ############################## atomic units - simplified ##############################
-
-// double const AU_nm {0.053};  // Bohr radius [nm]
-// double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
-// double const AU_eV {27.21};  // Hartree energy [eV]
-// double const AU_s {2.42E-17};  // Time [s]
-// double const AU_cm {AU_nm*1e-7};  // [cm]  AU_nm*1e-7
-// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-// double const AU_A {6.62E-3};  // [A]  _e0/_tau0
-// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
-
-// ############################## scaling factors ##############################
-
-// double const AU_m {sqrt(EPS0*EPS_GaAs*KB_J*TEMP/E0/E0/(ND*1E6))};  // Debye length [m] (*1e6: cm->m)
-// double const AU_eV {KB*TEMP};  // Thermal energy [eV]
-// double const AU_nm {AU_m*1E9};  // Bohr radius [nm]
-// double const AU_cm {AU_m*1e2};  // [cm]
-// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-// double const AU_s {AU_cm*AU_cm/DIFF};  // Time [s]
-// double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
-// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
-
-// #################### klasa array ####################
+// #################### array class ####################
 template <class T>
 class array {
     private:

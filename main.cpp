@@ -5,15 +5,6 @@
 #include <chrono>
 
 int main(){
-
-    /// TODO: ALL OUTPUT AND INPUT TO .CSV FORMAT, USE SAVE/LOAD FUNCTIONS
-    /// TODO: Parametr input from json file?
-
-    // omp_set_dynamic(0);
-    // omp_set_num_threads(1);
-    // cout<<"omp_get_max_threads(): "<<omp_get_max_threads() <<endl;
-    // cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
-
     size_t nx = 200, nk = 200;
     double lD = 1000/AU_nm, lC = 250/AU_nm;
     double k_max = 0.05;  // -1, 0.15
@@ -164,5 +155,4 @@ int main(){
     cout<<" ("<<int(t_elapsed.count()/1000./60.)<<" min "<<int(t_elapsed.count()/1000.)%60<<" s "<<int(t_elapsed.count())%1000<<" ms)"<<endl;
 
     return 0;
-
 }

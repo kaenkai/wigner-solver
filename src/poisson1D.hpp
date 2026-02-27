@@ -1,7 +1,7 @@
 #ifndef POISSON1D_HPP
 #define POISSON1D_HPP
 
-#include "lib.hpp"
+#include <armadillo>
 
 using namespace arma;
 
