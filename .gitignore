@@ -60,3 +60,4 @@
 /OutData/GnuplotScripts/*.png
 !/OutData/GnuplotScripts/*.gp
 !/OutData
+out
