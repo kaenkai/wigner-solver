@@ -1,6 +1,5 @@
 #include "lib.hpp"
 #include <armadillo>
-#include <cmath>
 #include "poisson1D.hpp"
 
 using namespace AtomicUnits;
@@ -83,8 +82,6 @@ void Poisson1D::solve_tridiag() {
     A(nx_-1,nx_-1) = 1;
     d(nx_-1) = dirichletR_;
 
-    A.raw_print();
-
     // von Neumann BC
     /// TODO: implement von Neumann BC
     // if (pBC_vN_) {
@@ -105,15 +102,16 @@ void Poisson1D::solve_tridiag() {
  * Solves 1D Poisson equation with Dirichlet boundary conditions for an uniform charge density
  *
  * Analytical solution:
- * $\phi(x) = \frac{\rho(x)}{2\epsilon}(Lx-x^2)$
+ * $\phi(x) = \frac{\rho(x)}{2\epsilon}x(L-x) = \frac{1}{2}x(1-x)$,
+ * for $L=1$, $\rho=1$, and $\epsilon=1$.
  */
 void Poisson1D::testUniformCharge() {
-    size_t nx = 101;    // grid size
+    const size_t nx = 101; // grid size
     double len = 1;
     double h = len/(nx-1); // step size [AU]
     Poisson1D p(nx, h);
 
-    // Set uniform charge density to -0.0001 AU
+    // Set uniform charge density to 1
     double rho = 1;
     p.rho_.fill(rho);
     p.epsilonR_ = 4*M_PI;
@@ -126,25 +124,85 @@ void Poisson1D::testUniformCharge() {
     // Analytical solution
     double epsilon = p.epsilonR_/4./M_PI;
     arma::vec phi_an = arma::linspace(0, len, nx)
-        .transform([rho, epsilon, len](double x){return rho/2/epsilon*x*(len-x);});
-    arma::vec phi_err = p.uNew_-phi_an;
+        .transform(
+            [rho, epsilon, len](double x){
+                return rho/2/epsilon*x*(len-x);
+            }
+        );
+    arma::vec phi_err = phi_num-phi_an;
 
-    // Output results
+    // Print results
     cout << "# Poisson equation test for uniform charge density" << endl;
     cout << "# Left BC = " << p.get_dirichletL()*AU_eV
          << ", Right BC = " << p.get_dirichletR()*AU_eV
          << ", Grid points = " << p.get_nx() 
          << ", Spacing = " << p.get_h() << endl;
     cout << "# Charge = " << rho << endl;
-    // Output x [nm], charge density [AU, C/cm^3], potential_numeric [V], potential_analytical [V]
-    cout << "x rhs phi_num phi_an phi_err phi_num/phi_an res" << endl;
-    for (size_t i = 1; i < p.get_nx()-1; ++i) {
+    cout << "x rhs phi_num phi_an phi_err res" << endl;
+    for (size_t i = 1; i < nx-1; ++i) {
         cout << i*h << ' ' <<
                 -p.rho_(i)*h*h/epsilon << ' ' <<
                 phi_num(i) << ' ' <<
                 phi_an(i) << ' ' <<
                 phi_err(i) << ' ' <<
-                phi_num(i)/phi_an(i) << ' ' <<
+                (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
+    }
+    cout << "# Potential max value (numerical): " << arma::max(phi_num) << endl;
+    cout << "# Potential max value (analytical): " << arma::max(phi_an) << endl;
+}
+
+/**
+ * Static method for tesing Poisson solver.
+ * Solves 1D Poisson equation with Dirichlet boundary conditions for an sinusoidal charge density
+ *
+ * Analytical solution:
+ * $\rho(x) = \epsilon\frac{k\pi}{L}^2\sin(k\pi x/L) = (k\pi)^2\sin(k\pi x)$,
+ * $\pxi(x) = \sin(k\pi x/L) = \sin(k\pi x)$,
+ * for $L=1$, $\rho=1$, and $\epsilon=1$.
+ */
+void Poisson1D::testSinusoidalPotential(){
+    const size_t nx = 101; // grid size
+    double len = 1;
+    double h = len/(nx-1); // step size [AU]
+    Poisson1D p(nx, h);
+
+    // Set charge density
+    p.set_boundary_conditions(0, 0);
+    p.set_epsilonR(4*M_PI);
+    double epsilon = p.epsilonR_/4./M_PI;
+    int k = 4;
+    p.rho_ = arma::linspace(0, len, nx)
+        .transform(
+            [k, len, epsilon](double x)->double{
+                return epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
+            }
+        );
+
+    p.solve();
+    arma::vec phi_num = -p.uNew_;
+
+    // Analytical solution
+    arma::vec phi_an = arma::linspace(0, len, nx)
+        .transform(
+            [k, len](double x)->double{
+                return std::sin(k*M_PI*x/len);
+            }
+        );
+    arma::vec phi_err = phi_num-phi_an;
+
+    // Print results
+    cout << "# Poisson equation test for uniform charge density" << endl;
+    cout << "# Left BC = " << p.get_dirichletL()*AU_eV
+         << ", Right BC = " << p.get_dirichletR()*AU_eV
+         << ", Grid points = " << p.get_nx() 
+         << ", Spacing = " << p.get_h() << endl;
+    cout << "x rhs phi_num phi_an phi_err res" << endl;
+    for (size_t i = 1; i < nx-1; ++i) {
+        cout << i*h << ' ' <<
+                -p.rho_(i)*h*h/epsilon << ' ' <<
+                phi_num(i) << ' ' <<
+                phi_an(i) << ' ' <<
+                phi_err(i) << ' ' <<
                 (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
     }
     cout << "# Potential max value (numerical): " << arma::max(phi_num) << endl;

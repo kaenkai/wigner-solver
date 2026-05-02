@@ -124,7 +124,8 @@ int main(){
     // Poisson equation test
     //
     cout<<"# Solving Poisson equation"<<endl;
-    Poisson1D::testUniformCharge();
+    // Poisson1D::testUniformCharge();
+    Poisson1D::testSinusoidalPotential();
 
     //
     // Boltzmann-Poisson

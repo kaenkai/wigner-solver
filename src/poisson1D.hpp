@@ -60,6 +60,7 @@ class Poisson1D {
         static void testUniformCharge();
         static void testChargedPlane();
         static void testConvergence();
+        static void testSinusoidalPotential();
 
         arma::vec rho_;
         arma::vec nE_;
