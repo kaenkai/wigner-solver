@@ -1,6 +1,9 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
+using namespace AtomicUnits;
+
+
 // #define GET_VARIABLE_NAME(Variable) (#Variable)
 
 // ############################## Read parameters from file ##############################

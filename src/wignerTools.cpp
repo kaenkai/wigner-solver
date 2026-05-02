@@ -1,6 +1,8 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
+using namespace AtomicUnits;
+
 
 /// Sets up equilibrium function, if read_data = true, reads equilibrium from input_file
 void WignerFunction::setEquilibriumFunction(std::string input_file = "", bool read_data = false){

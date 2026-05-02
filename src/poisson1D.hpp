@@ -53,7 +53,13 @@ class Poisson1D {
         double get_dirichletL() {return dirichletL_;};
         double get_dirichletR() {return dirichletR_;};
 
-        static void testPoisson();
+
+        /*
+        Poisson equasion tests
+        */
+        static void testUniformCharge();
+        static void testChargedPlane();
+        static void testConvergence();
 
         arma::vec rho_;
         arma::vec nE_;

@@ -3,6 +3,9 @@
 
 #include "lib.hpp"
 
+using namespace AtomicUnits;
+
+
 /// Wigener function class
 class WignerFunction{
 

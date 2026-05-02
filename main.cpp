@@ -4,6 +4,8 @@
 
 #include <chrono>
 
+using namespace AtomicUnits;
+
 int main(){
     size_t nx = 200, nk = 200;
     double lD = 1000/AU_nm, lC = 250/AU_nm;
@@ -88,6 +90,7 @@ int main(){
     //
     // Boltzmann-Poisson test
 	//
+    /*
     cout<<"## Solving BTE"<<endl;
     f.solveWignerEq();
     f.calcCD_X();
@@ -100,6 +103,7 @@ int main(){
     p.solve();
     f.set_uC(p.uNew_);
     cout<<"## BTE done"<<endl;
+    */
 
 	//
     // Wave packet time evolution
@@ -119,8 +123,8 @@ int main(){
     //
     // Poisson equation test
     //
-    // cout<<"# Solving Poisson equation"<<endl;
-    // Poisson1D::testPoisson();
+    cout<<"# Solving Poisson equation"<<endl;
+    Poisson1D::testUniformCharge();
 
     //
     // Boltzmann-Poisson

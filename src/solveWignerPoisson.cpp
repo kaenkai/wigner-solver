@@ -2,6 +2,8 @@
 #include "WignerFunction.hpp"
 #include "poisson1D.hpp"
 
+using namespace AtomicUnits;
+
 
 void WignerFunction::solveWignerPoisson
 	(double u_bias, double i_alpha, double beta, size_t i_n_max, bool timeDependent){

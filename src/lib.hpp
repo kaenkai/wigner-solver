@@ -20,20 +20,44 @@ using std::cout;
 using std::endl;
 using std::setw;
 
-// ############################## CONSTANTS ##############################
-/// TODO: put into a namespace (maybe)
+namespace AtomicUnits {
+    // ---------
+    // constants
+    // ---------
+    double const PI {M_PI};
+    double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
+    double const KB_J {1.380649E-23};  // Boltzmann constant [J/K]
+    double const E0 {1.602176634E-19};  // Elementary charge [C]
+    double const HBAR_J {1.0545718176461565E-34};  // Reduced Planck constant [Js]
+    double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
+    double const M0 {9.1093837015E-31};  // Electron mass [kg]
+    double const EPS0 {8.8541878128E-12};  // Electric constant
 
-double const PI {M_PI};
-double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
-double const KB_J {1.380649E-23};  // Boltzmann constant [J/K]
-double const E0 {1.602176634E-19};  // Elementary charge [C]
-double const HBAR_J {1.0545718176461565E-34};  // Reduced Planck constant [Js]
-double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
-double const M0 {9.1093837015E-31};  // Electron mass [kg]
-double const EPS0 {8.8541878128E-12};  // Electric constant
+    // --------------------------------------------------
+    // atomic units
+    // source: https://en.wikipedia.org/wiki/Atomic_units
+    // --------------------------------------------------
+    double const AU_eV {27.211386245981};  // Hartree energy [eV]
+    double const AU_nm {0.0529177210544};  // Bohr radius [nm]
+    double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
+    double const AU_m2 {AU_m*AU_m};  // [cm**2]  (AU_nm*1e-7)**2
+    double const AU_m3 {AU_m*AU_m*AU_m};  // [cm**3]  (AU_nm*1e-7)**3
+    double const AU_cm {AU_m*1e2};  // [cm]
+    double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
+    double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
+    double const AU_s {HBAR_eV/AU_eV};  // Time [s]
+    double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
+    double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
+}
 
-// ############################## DEFAULT SYSTEM PARAMETERS ##############################
+// -------------------------------
+// alias for AtomicUnits namespace
+// -------------------------------
+// namespace au = AtomicUnits;
 
+// ------------------
+// default parameters
+// ------------------
 double const A_GaAs {0.565};  // GaAs lattice constant [nm]
 double const EPS_GaAs {13.1};  // GaAs relative permittivity
 double const M_GaAs {0.067};  // GaAs effective mass
@@ -41,21 +65,10 @@ double const TEMP {300};
 double const DIFF {1};  // Diffusion coefficient [cm^2/s]
 double const ND {2E18};  // Donor concentration [cm^-3]
 
-// ############################## atomic units ##############################
-
-double const AU_eV {27.211386245988};  // Hartree energy [eV]
-double const AU_nm {0.0529177210903};  // Bohr radius [nm]
-double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
-double const AU_m2 {AU_m*AU_m};  // [cm**2]  (AU_nm*1e-7)**2
-double const AU_m3 {AU_m*AU_m*AU_m};  // [cm**3]  (AU_nm*1e-7)**3
-double const AU_cm {AU_m*1e2};  // [cm]
-double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-double const AU_s {HBAR_eV/AU_eV};  // Time [s]
-double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
-double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
-
-// #################### array class ####################
+/**
+ * array class
+ * @deprecated now armadillo vec is used instead
+ */
 template <class T>
 class array {
     private:
@@ -111,7 +124,10 @@ class array {
         }
 };
 
-// #################### klasa matrix ####################
+/**
+ * matrix class
+ * @deprecated now armadillo mat is used instead
+ */
 template <class T>
 class matrix {
     private:

@@ -1,6 +1,8 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
+using namespace AtomicUnits;
+
 
 /// Solve Wigner equation
 void WignerFunction::solveWignerEq(){
