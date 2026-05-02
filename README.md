@@ -1,6 +1,6 @@
-# WignerSolver ver. `0.260227`
+# wigner-solver
 
-Program for solving Boltzmann-Poisson and Wigner-Poisson set of equations.
+Program for solving Boltzmann-Poisson (classical) and Wigner-Poisson (quantum) electron transport systems.
 
 * Written in C++, and employs **Armadillo C++ library for linear algebra & scientific computing**. 
 * Due to the use of spare matrices **SuperLU** library is needed.
