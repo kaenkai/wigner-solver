@@ -61,3 +61,6 @@
 !/OutData/GnuplotScripts/*.gp
 !/OutData
 out
+
+# Idea files
+.idea/

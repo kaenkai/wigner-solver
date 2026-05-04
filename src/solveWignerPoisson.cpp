@@ -1,10 +1,14 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
-#include "poisson1D.hpp"
+#include "Poisson1D.hpp"
 
 using namespace AtomicUnits;
 
 
+/**
+ * Solves Wigner-Poisson transport equation system
+ * @todo put into separate class
+ */
 void WignerFunction::solveWignerPoisson
 	(double u_bias, double i_alpha, double beta, size_t i_n_max, bool timeDependent){
 

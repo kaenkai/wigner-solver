@@ -1,5 +1,5 @@
-#ifndef POISSON1D_HPP
-#define POISSON1D_HPP
+#ifndef Poisson1D_HPP
+#define Poisson1D_HPP
 
 #include <armadillo>
 
@@ -58,9 +58,10 @@ class Poisson1D {
         Poisson equasion tests
         */
         static void testUniformCharge();
+        static void testSinus();
+        static void testExponent();
         static void testChargedPlane();
         static void testConvergence();
-        static void testSinusoidalPotential();
 
         arma::vec rho_;
         arma::vec nE_;

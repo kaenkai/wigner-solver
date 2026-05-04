@@ -6,7 +6,9 @@
 using namespace AtomicUnits;
 
 
-/// Wigener function class
+/**
+ * Wigener function class
+ */
 class WignerFunction{
 
     size_t nx_;
@@ -41,25 +43,25 @@ class WignerFunction{
     std::string diffSch_K_ = "UDS2", diffSch_P_ = "UDS2";
     std::string diffSch_J_ = "UDS2";
 
-    arma::mat f_;  // Wigner function
-    arma::mat fEq_;  // Equilibrium Wigner function
-    arma::mat f0_;  // Wigner function before time evolution
-    arma::mat fL_;  // Wigner function for el. from LEFT contact
-    arma::mat fR_;  // Wigner function for el. from RIGHT contact
-    arma::vec u_;  // Potential energy
-    arma::vec uC_; // Hartree potential / bias potential
-    arma::vec uB_;  // Band offset
-    arma::vec du_;  // Potential derivative
-    arma::vec d3u_;  // Potential third derivative
+    arma::mat f_;       // Wigner function
+    arma::mat fEq_;     // Equilibrium Wigner function
+    arma::mat f0_;      // Wigner function before time evolution
+    arma::mat fL_;      // Wigner function for el. from LEFT contact
+    arma::mat fR_;      // Wigner function for el. from RIGHT contact
+    arma::vec u_;       // Potential energy
+    arma::vec uC_;      // Hartree potential / bias potential
+    arma::vec uB_;      // Band offset
+    arma::vec du_;      // Potential derivative
+    arma::vec d3u_;     // Potential third derivative
     arma::vec uStart_;  // Potential
-    arma::vec bc_;  // Boundary condition
-    arma::vec x_;  // Position values
-    arma::vec k_;  // Wave vector values
-    arma::mat sin_;  // Sine function values
-    arma::vec cdX_;  // Carrier density in x / k
+    arma::vec bc_;      // Boundary condition
+    arma::vec x_;       // Position values
+    arma::vec k_;       // Wave vector values
+    arma::mat sin_;     // Sine function values
+    arma::vec cdX_;     // Carrier density in x / k
     arma::vec cdK_;
-    arma::vec nD_;  // Doping profile
-    arma::vec currD_;  // Current density
+    arma::vec nD_;      // Doping profile
+    arma::vec currD_;   // Current density
 
     arma::sp_mat a_;
     arma::vec b_;
@@ -119,8 +121,7 @@ public:
         cout<<"## End: WignerFunction default constructor"<<endl;
     }  // End of constructor
 
-    WignerFunction(size_t i_nx, double i_lD, double i_lC,
-        size_t i_nk, double i_kmax) :
+    WignerFunction(size_t i_nx, double i_lD, double i_lC, size_t i_nk, double i_kmax) :
         nx_ (i_nx),
         lD_ (i_lD),
         lC_ (i_lC),
@@ -154,13 +155,13 @@ public:
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
         cout<<"## Start: WignerFunction constructor"<<endl;
-        // ########## Configuration space array values ##########
         cout<<"# Setting up configuration space array values"<<endl;
         for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
-        // ########## Wave vector space array values ##########
         cout<<"# Setting up wave vector space array values"<<endl;
         for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
-        // ########## NLP sinus values ##########
+        // ----------------
+        // NLP sinus values
+        // ----------------
         // #pragma omp parallel for collapse(3)
         cout<<"# Setting up NLP sine values"<<endl;
         for (size_t j=0; j<nk_; ++j)
@@ -280,11 +281,11 @@ public:
     void solveSchrEq();
 
     void setBoundCond();  // Boundary conditions
-    void setEquilibriumFunction(std::string, bool);  // Calculating equilibrium function
+    void setEquilibriumFunction(std::string);  // Calculates equilibrium function
 
-    void diffusionTerm(size_t, size_t, double);  // Filling matrice with drift term
-    void driftTerm(size_t, size_t, double);  // Filling matrice with drift term
-    void scatteringTerm(size_t, size_t, double);  // Filling matrice with drift term
+    void diffusionTerm(size_t, size_t, double);
+    void driftTerm(size_t, size_t, double);
+    void scatteringTerm(size_t, size_t, double);
     void quantumCorrTerm(size_t, size_t, double);
 
     void solveMatrixEq();  // Wigner equation solved by solving matrix equation
@@ -301,10 +302,10 @@ public:
 
     double eqFun_x(double, double);
     double lorentz(double);  // Lorentz profile
-    double gauss(double);  // Gauss
+    double gauss(double);  // Gauss profile
     double voigt(double);  // Voigt profile
 
-    // wignerTools.cpp
+    // WignerTools.cpp
     void setPotBias(double);
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);

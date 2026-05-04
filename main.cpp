@@ -1,11 +1,16 @@
 #include "src/lib.hpp"
 #include "src/WignerFunction.hpp"
-#include "src/poisson1D.hpp"
+#include "src/Poisson1D.hpp"
 
 #include <chrono>
 
 using namespace AtomicUnits;
 
+
+/**
+ * Main function for running simulations (input if you prefer)
+ * @todo move steps to separate functions and clean up
+ */
 int main(){
     size_t nx = 200, nk = 200;
     double lD = 1000/AU_nm, lC = 250/AU_nm;
@@ -125,7 +130,9 @@ int main(){
     //
     cout<<"# Solving Poisson equation"<<endl;
     // Poisson1D::testUniformCharge();
-    Poisson1D::testSinusoidalPotential();
+    // Poisson1D::testSinus();
+    // Poisson1D::testChargedPlane();
+    Poisson1D::testExponent();
 
     //
     // Boltzmann-Poisson

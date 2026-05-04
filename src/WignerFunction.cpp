@@ -124,7 +124,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
         if (k<0.) {
             if (i==nx_-1) {
                 a_(r, r) += -C;
-                b_(r) += -bc*C;
+                b_(r) += -B;
             }
             else {
                 a_(r, r) += -C;
@@ -134,7 +134,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
         if (k>0.) {
             if (i==0) {
                 a_(r, r) += C;
-                b_(r) += bc*C;
+                b_(r) += B;
             }
             else {
                 a_(r, r) += C;
@@ -150,7 +150,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
         if (k<0.) {
             if (i==nx_-1) {
                 a_(r, r) += -C;
-                b_(r) += -bc*C;
+                b_(r) += -B;
             }
             else {
                 a_(r, r) += -C;
@@ -160,7 +160,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
         if (k>0.) {
             if (i==0) {
                 a_(r, r) += C;
-                b_(r) += bc*C;
+                b_(r) += B;
             }
             else {
                 a_(r, r) += C;

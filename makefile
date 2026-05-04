@@ -1,7 +1,7 @@
 # Makefile
 # Author: KK
 
-CXXFLAGS = -g -O2\
+CXXFLAGS = -std=c++20 -g -O2\
 	-fopenmp -Wpedantic -Wall -Wextra -Werror\
 	-Wdisabled-optimization\
 	-Wlogical-op\
@@ -14,9 +14,10 @@ CXXFLAGS = -g -O2\
 	-Wfloat-conversion
 CXX = g++ # icpc
 OBJS = src/WignerFunction.o \
-	src/wfIO.o src/wignerTools.o \
+	src/wfIO.o src/WignerTools.o \
 	src/solveWignerPoisson.o \
-	src/poisson1D.o \
+	src/Poisson1D.o \
+	src/TestPoisson1D.o \
 	main.o
 LDLIBS = -larmadillo -lsuperlu -lopenblas -lm -fopenmp
 #-lblas <-> -lopenblas
