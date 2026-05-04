@@ -130,9 +130,9 @@ int main(){
     //
     cout<<"# Solving Poisson equation"<<endl;
     // Poisson1D::testUniformCharge();
-    // Poisson1D::testSinus();
+    // Poisson1D::testExponentCharge();
+    Poisson1D::testGrid();
     // Poisson1D::testChargedPlane();
-    Poisson1D::testExponent();
 
     //
     // Boltzmann-Poisson

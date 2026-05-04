@@ -58,8 +58,11 @@ class Poisson1D {
         Poisson equasion tests
         */
         static void testUniformCharge();
-        static void testSinus();
-        static void testExponent();
+        static void testExponentCharge();
+
+        double testSine();
+        static void testGrid();
+        
         static void testChargedPlane();
         static void testConvergence();
 
