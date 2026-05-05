@@ -62,9 +62,9 @@ class Poisson1D {
 
         double testSine();
         static void testGrid();
-        
+        static void testSelfConsistency();
+
         static void testChargedPlane();
-        static void testConvergence();
 
         arma::vec rho_;
         arma::vec nE_;
@@ -72,8 +72,8 @@ class Poisson1D {
         arma::vec uNew_;
         arma::vec du_;
 
-        arma::vec pFun_;
-        arma::sp_mat dPu_;
+        arma::vec pFun_;    // Poisson function (right-hand side of the linearized equation)
+        arma::sp_mat dPu_;  // Derivative of Poisson function with respect to potential
 
     private:
         size_t nx_;

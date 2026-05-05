@@ -193,15 +193,10 @@ double calcInt(arma::vec f, T h){
     arma::vec df(n, arma::fill::zeros);
     for (size_t i=2; i<n-2; ++i)
         df(i) = (1/12.*f(i-2)-2/3.*f(i-1)+2/3.*f(i+1)-1/12.*f(i+2))/h;
-        // df(i) = (-f(i-1)+f(i+1))/h/2.;
     df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
     df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
     df(1) = (-f(0)+f(2))/h/2.;
     df(n-2) = (-f(n-3)+f(n-1))/h/2.;
-    // df(0) = (-f(0)+f(1))/h;
-    // df(n-1) = (f(n-1)-f(n-2))/h;
-    // df(0) = df(1);
-    // df(n-1) = df(n-2);
     return df;
 }
 

@@ -9,64 +9,70 @@ using namespace AtomicUnits;
 
 /**
  * Main function for running simulations (input if you prefer)
- * @todo move steps to separate functions and clean up
+ * @todo create separate functions and clean up
  */
 int main(){
-    size_t nx = 200, nk = 200;
-    double lD = 1000/AU_nm, lC = 250/AU_nm;
-    double k_max = 0.05;  // -1, 0.15
 
-    WignerFunction f(nx, lD, lC, nk, k_max);
+    // --------------------------------------------
+    // Set up Wigner function and system parameters
+    // --------------------------------------------
+    // size_t nx = 200, nk = 200;
+    // double lD = 1000/AU_nm, lC = 250/AU_nm;
+    // double k_max = 0.05;  // -1, 0.15
+    // WignerFunction f(nx, lD, lC, nk, k_max);
 
-    arma::vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
-
-	//
+	// ---------------------------------------
 	// System/simulation parameters
     // Constants are given in src/lib.hpp file
-	//
-    f.set_m(M_GaAs);
-    f.set_temp(TEMP);
-    f.set_epsilonR(EPS_GaAs);
-    f.set_cD(ND*AU_cm3); // Carrier density in [AU]
+	// ---------------------------------------
+    // f.set_m(M_GaAs);
+    // f.set_temp(TEMP);
+    // f.set_epsilonR(EPS_GaAs);
+    // f.set_cD(ND*AU_cm3); // Carrier density in [AU]
+
+    // ---------------------------------
 	// Fermi level in left/right contact
-    f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
-    f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+    // ---------------------------------
+    // f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+    // f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+
+    // -----------------------------------
 	// Miscellaneous simulation parameters
-    f.set_dt(0.1E-15/AU_s);
-    f.set_useQC(false);  // Quantum correction term (third 'p' derivative)?
-    f.set_useNLP(false);  // Calculations with non-local potential?
-    f.set_uBias_BC(true);  // Voltage bias given through BC?
+    // -----------------------------------
+    // f.set_dt(0.1E-15/AU_s);
+    // f.set_useQC(false);  // Quantum correction term (third 'p' derivative)?
+    // f.set_useNLP(false);  // Calculations with non-local potential?
+    // f.set_uBias_BC(true);  // Voltage bias given through BC?
 
-	//
+	// -----------------
     // Dissipation terms
-	//
-    f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
-    f.set_rG(0), f.set_rF(0), f.set_lambda(0);
+	// -----------------
+    // f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
+    // f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
-    //
-	// Setting up differentional scheme
+    // ------------------------------------------------------------
+	// Setting up differentiation scheme
     // Schemes implemented: "CDS1", "UDS1", "UDS2", "UDS3", "HDS22"
-	//
-    f.set_diffSch_K("UDS2");
-    f.set_diffSch_P("UDS2");
-    f.set_diffSch_J("UDS2");
+	// ------------------------------------------------------------
+    // f.set_diffSch_K("UDS2");
+    // f.set_diffSch_P("UDS2");
+    // f.set_diffSch_J("UDS2");
 
-	//
+	// ------------------------------------------------
     // Boundary conditions
-	//
     // 0 -> 0 (closed system, no carrier inflow)
 	// 1 -> SF, 2:4 -> SF convolution
 	// -1 -> Gauss, -2:-4 -> Gauss function convolution
-	//
-    cout<<"# Setting up BC"<<endl;
-    f.set_bcType(1);
+	// ------------------------------------------------
+    // cout<<"# Setting up BC"<<endl;
+    // f.set_bcType(1);
 
-    //
+    // --------------------------------------
     // Setting up potential bias and barriers
-	//
-    cout<<"# Setting up potential"<<endl;
-    double u_bias = 0.0/AU_eV;
-    f.set_uBias(u_bias);
+	// --------------------------------------
+    // cout<<"# Setting up potential"<<endl;
+    // double u_bias = 0.0/AU_eV;
+    // f.set_uBias(u_bias);
     // f.setPotBias(0.1/AU_eV);
     // f.addRectBarr(0.3/AU_eV, 300, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 700, 100, 10);
@@ -78,23 +84,23 @@ int main(){
     // f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
     // f.set_uC(f.get_uStart());
 
-    //
+    // --------------------------------------
     // Setting equilibrium function from file
-	//
+	// --------------------------------------
 	// if false Wigner/Boltzmann is solved for 0 bias and no dissipation
     // f.setEquilibriumFunction("OutData/wf_feq_BP.bin", true);
 
-    // Print siulation parameters
-    f.printParam();
+    // Print system parameters
+    // f.printParam();
 
-    //
+    // ----------------------
     // Start calculation time
-    //
+    // ----------------------
     auto t_start = std::chrono::steady_clock::now();
 
-    //
+    // ----------------------
     // Boltzmann-Poisson test
-	//
+	// ----------------------
     /*
     cout<<"## Solving BTE"<<endl;
     f.solveWignerEq();
@@ -110,9 +116,9 @@ int main(){
     cout<<"## BTE done"<<endl;
     */
 
-	//
+	// --------------------------
     // Wave packet time evolution
-	//
+	// --------------------------
 	/*
     f.addWavePacket(500/AU_nm, 100/AU_nm, 0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
     f.addWavePacket(3500/AU_nm, 100/AU_nm, -0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
@@ -125,18 +131,19 @@ int main(){
     }
 	*/
 
-    //
+    // ---------------------
     // Poisson equation test
-    //
+    // ---------------------
     cout<<"# Solving Poisson equation"<<endl;
     // Poisson1D::testUniformCharge();
     // Poisson1D::testExponentCharge();
-    Poisson1D::testGrid();
+    // Poisson1D::testGrid();
     // Poisson1D::testChargedPlane();
+    Poisson1D::testSelfConsistency();
 
-    //
+    // -----------------
     // Boltzmann-Poisson
-	//
+	// -----------------
 	/*
     cout<<"# Solving B-P set of equations"<<endl;
     (uBias, alpha, beta, n_max, timeDependent)
@@ -145,18 +152,18 @@ int main(){
     f.saveWignerFun();
 	*/
 
-    //
+    // --------------------
     // Schrödinger equation
-	//
+	// --------------------
     // cout<<"# Solving Schrödinger equation"<<endl;
     // f.solveSchrEq();
 
-    //
+    // ----------------------------------------------------------------
     // Printing and saving results to files located it "OutData" folder
-    //
-    f.saveWignerFun();
-    f.saveTest();
-    f.printResults();
+    // ----------------------------------------------------------------
+    // f.saveWignerFun();
+    // f.saveTest();
+    // f.printResults();
 
     //
     // Evaluating calculation time

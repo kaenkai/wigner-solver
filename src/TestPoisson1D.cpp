@@ -1,5 +1,7 @@
 #include "lib.hpp"
 #include "Poisson1D.hpp"
+#include <armadillo>
+#include <iostream>
 
 using namespace AtomicUnits;
 
@@ -19,9 +21,9 @@ void Poisson1D::testUniformCharge() {
 
     // ------------------
     // Set charge density
-    // -----------------
+    // ------------------
     double rho = 1;
-    p.rho_.fill(rho);
+    p.rho_.fill(-rho);
     p.epsilonR_ = 4*M_PI;
     p.set_boundary_conditions(0, 0);
     p.set_epsilonR(1);
@@ -36,7 +38,7 @@ void Poisson1D::testUniformCharge() {
     arma::vec phi_an = arma::linspace(0, len, nx)
         .transform(
             [rho, epsilon, len](double x){
-                return rho/2/epsilon*x*(len-x);
+                return -rho/2/epsilon*x*(len-x);
             }
         );
     arma::vec phi_err = phi_num-phi_an;
@@ -58,8 +60,8 @@ void Poisson1D::testUniformCharge() {
              << phi_err(i) << '\t'
              << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
     }
-    cout << "# Potential max value (numerical): " << arma::max(phi_num) << endl;
-    cout << "# Potential max value (analytical): " << arma::max(phi_an) << endl;
+    cout << "# Potential minimum (numerical): " << arma::min(phi_num) << endl;
+    cout << "# Potential minimum (analytical): " << arma::min(phi_an) << endl;
 }
 
 
@@ -79,9 +81,9 @@ void Poisson1D::testExponentCharge(){
 
     // ------------------
     // Set charge density
-    // -----------------
+    // ------------------
     int alpha = 1;
-    p.set_boundary_conditions(-1, -std::exp(alpha));
+    p.set_boundary_conditions(1, std::exp(alpha));
     p.set_epsilonR(4*M_PI);
     double epsilon = p.epsilonR_/4./M_PI;
     p.rho_ = arma::linspace(0, len, nx)
@@ -99,7 +101,7 @@ void Poisson1D::testExponentCharge(){
     arma::vec phi_an = arma::linspace(0, len, nx)
         .transform(
             [alpha, len](double x)->double{
-                return std::exp(alpha*x/len);
+                return -std::exp(alpha*x/len);
             }
         );
     arma::vec phi_err = phi_num-phi_an;
@@ -120,8 +122,8 @@ void Poisson1D::testExponentCharge(){
              << phi_err(i) << '\t'
              << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
     }
-    cout << "# Potential max value (numerical): " << arma::max(phi_num) << endl;
-    cout << "# Potential max value (analytical): " << arma::max(phi_an) << endl;
+    cout << "# Potential minimum (numerical): " << arma::min(phi_num) << endl;
+    cout << "# Potential minimum (analytical): " << arma::min(phi_an) << endl;
 }
 
 
@@ -138,7 +140,7 @@ void Poisson1D::testExponentCharge(){
 double Poisson1D::testSine(){
     // ------------------
     // Set charge density
-    // -----------------
+    // ------------------
     this->set_boundary_conditions(0, 0);
     this->set_epsilonR(4*M_PI);
     double epsilon = epsilonR_/4./M_PI;
@@ -147,7 +149,7 @@ double Poisson1D::testSine(){
     rho_ = arma::linspace(0, len, nx_)
         .transform(
             [k, len, epsilon](double x)->double{
-                return epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
+                return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
             }
         );
 
@@ -160,7 +162,7 @@ double Poisson1D::testSine(){
     arma::vec phi_an = arma::linspace(0, len, nx_)
         .transform(
             [k, len](double x)->double{
-                return std::sin(k*M_PI*x/len);
+                return -std::sin(k*M_PI*x/len);
             }
         );
     arma::vec phi_err = (phi_num-phi_an);
@@ -199,6 +201,36 @@ void Poisson1D::testGrid() {
 }
 
 
+void Poisson1D::testSelfConsistency() {
+    const size_t nx = 101; // grid size
+    double len = 1;
+    double h = len/(nx-1); // step size [AU]
+    Poisson1D p(nx, h);
+    p.set_epsilonR(4*M_PI);
+    double epsilon = p.epsilonR_/4./M_PI;
+    int k = 2;
+    arma::vec rho = arma::linspace(0, len, nx)
+        .transform(
+            [k, len, epsilon](double x)->double{
+                return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
+            }
+        );
+    p.rho_ = rho;
+    p.solve();
+    arma::vec phi_ref = -p.uNew_;
+    arma::vec phi_num;
+    for (size_t i = 1000000; --i;) {
+        p.rho_ = calcSecondDer(p.uNew_, h)*epsilon;
+        p.solve();
+        phi_num = -p.uNew_;
+        cout << "Potential p-norm: " << arma::norm(phi_num, "inf")
+             << ", solution consistency (phi_ref-phi): " << arma::norm(phi_ref - phi_num, "inf") << endl;
+    }
+    cout << "Error after 1_000_000 iterations: " 
+         << arma::norm(phi_ref - phi_num, "inf") << endl;
+}
+
+
 /**
  * Solves 1D Poisson equation with Dirichlet boundary conditions for
  * an uniformly charged infinite plane located at 0.
@@ -222,6 +254,7 @@ void Poisson1D::testChargedPlane() {
     p.set_boundary_conditions(-5.647/AU_eV, -5.647/AU_eV);
     
     p.solve();
+    arma::vec phi_num = -p.uNew_;  // convert to potential by negating uNew_
 
     // Output results
     cout << "# Sheet charge density = " << sigma*E0/AU_m2 << " C/m^2" 
@@ -230,7 +263,8 @@ void Poisson1D::testChargedPlane() {
          << ", Grid points = " << p.get_nx() 
          << ", Spacing = " << p.get_h()*AU_nm << " nm" << endl;
     // Output x [nm], potential [eV], charge density [C/cm^3]
+    cout << "x[nm]\trho[C/cm^3]\tV[eV]" << endl;
     for (size_t i = 0; i < p.get_nx(); ++i) {
-        cout << x(i)*AU_nm << ' ' << p.uNew_(i)*AU_eV << ' ' << p.rho_(i)*E0/AU_cm3 << endl;
+        cout << x(i)*AU_nm << '\t' << p.rho_(i)*E0/AU_cm3 << '\t' << phi_num(i)*AU_eV << endl;
     }
 }
