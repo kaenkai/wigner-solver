@@ -137,6 +137,74 @@ void Poisson1D::testExponentCharge(){
  * 
  * @return maximum error between numerical and analytical solution
  */
+void Poisson1D::testSineCharge(){
+    // ------------------
+    // Set charge density
+    // ------------------
+    const size_t nx = 101; // grid size
+    double len = 1;
+    double h = len/(nx-1); // step size [AU]
+    Poisson1D p(nx, h);
+    p.set_boundary_conditions(0, 0);
+    p.set_epsilonR(4*M_PI);
+    double epsilon = p.epsilonR_/4./M_PI;
+    int k = 6;
+    p.rho_ = arma::linspace(0, len, p.nx_)
+        .transform(
+            [k, len, epsilon](double x)->double{
+                return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
+            }
+        );
+    p.rho_ += arma::vec(p.nx_, arma::fill::randn)
+        * epsilon*std::pow(k*M_PI/len, 2) * 1e-2;  // add random noise
+
+    p.solve();
+    arma::vec phi_num = -p.uNew_;
+
+    // -------------------
+    // Analytical solution
+    // -------------------
+    arma::vec phi_an = arma::linspace(0, len, p.nx_)
+        .transform(
+            [k, len](double x)->double{
+                return -std::sin(k*M_PI*x/len);
+            }
+        );
+    arma::vec phi_err = (phi_num-phi_an);
+    phi_err.transform([](double x)->double{return std::abs(x);});
+
+    // -------------
+    // Print results
+    // -------------
+    cout << "# Poisson equation test for uniform charge density" << endl;
+    cout << "# Left BC = " << p.get_dirichletL()*AU_eV
+         << ", Right BC = " << p.get_dirichletR()*AU_eV
+         << ", Grid points = " << p.get_nx() 
+         << ", Spacing = " << p.get_h() << endl;
+    cout << "x\trho\tphi_num\tphi_an\tphi_err\tres" << endl;
+    for (size_t i = 1; i < nx-1; ++i) {
+        cout << i*h << '\t'
+             << p.rho_(i) << '\t'
+             << phi_num(i) << '\t'
+             << phi_an(i) << '\t'
+             << phi_err(i) << '\t'
+             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
+    }
+    cout << "# Potential norm (numerical): " << arma::norm(phi_num) << endl;
+    cout << "# Potential norm (analytical): " << arma::norm(phi_an) << endl;
+}
+
+
+/**
+ * Solves 1D Poisson equation with Dirichlet boundary conditions for a sinusoidal charge density
+ *
+ * Analytical solution:
+ * $\rho(x) = \epsilon\frac{k\pi}{L}^2\sin(k\pi x/L) = (k\pi)^2\sin(k\pi x)$,
+ * $\pxi(x) = \sin(k\pi x/L) = \sin(k\pi x)$,
+ * for $L=1$, $\rho=1$, and $\epsilon=1$.
+ * 
+ * @return maximum error between numerical and analytical solution
+ */
 double Poisson1D::testSine(){
     // ------------------
     // Set charge density
@@ -144,7 +212,7 @@ double Poisson1D::testSine(){
     this->set_boundary_conditions(0, 0);
     this->set_epsilonR(4*M_PI);
     double epsilon = epsilonR_/4./M_PI;
-    int k = 2;
+    int k = 6;
     double len = (nx_-1)*h_;
     rho_ = arma::linspace(0, len, nx_)
         .transform(
@@ -201,6 +269,10 @@ void Poisson1D::testGrid() {
 }
 
 
+/**
+ * Tests the self-consistency of the Poisson solver by comparing the charge density
+ * with the second derivative of the potential
+*/
 void Poisson1D::testSelfConsistency() {
     const size_t nx = 101; // grid size
     double len = 1;
@@ -208,25 +280,26 @@ void Poisson1D::testSelfConsistency() {
     Poisson1D p(nx, h);
     p.set_epsilonR(4*M_PI);
     double epsilon = p.epsilonR_/4./M_PI;
-    int k = 2;
+    int k = 6;
     arma::vec rho = arma::linspace(0, len, nx)
         .transform(
             [k, len, epsilon](double x)->double{
                 return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
             }
         );
-    p.rho_ = rho;
+    p.rho_ = rho + arma::vec(p.nx_, arma::fill::randn)
+        * epsilon*std::pow(k*M_PI/len, 2) * 1e-2;  // add random noise
     p.solve();
     arma::vec phi_ref = -p.uNew_;
     arma::vec phi_num;
-    for (size_t i = 1000000; --i;) {
+    for (size_t i = 100000; --i;) {
         p.rho_ = calcSecondDer(p.uNew_, h)*epsilon;
         p.solve();
         phi_num = -p.uNew_;
         cout << "Potential p-norm: " << arma::norm(phi_num, "inf")
              << ", solution consistency (phi_ref-phi): " << arma::norm(phi_ref - phi_num, "inf") << endl;
     }
-    cout << "Error after 1_000_000 iterations: " 
+    cout << "Error after 100_000 iterations: " 
          << arma::norm(phi_ref - phi_num, "inf") << endl;
 }
 

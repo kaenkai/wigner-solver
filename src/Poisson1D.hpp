@@ -59,6 +59,7 @@ class Poisson1D {
         */
         static void testUniformCharge();
         static void testExponentCharge();
+        static void testSineCharge();
 
         double testSine();
         static void testGrid();
