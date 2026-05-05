@@ -326,12 +326,18 @@ void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double
 }
 
 
+// -----------------------
+// Wave packet simulations
+// -----------------------
+
+
 /** 
  * Gaussian wave packet initial conditions
  * @param gwp_x0, gwp_k0 GWP position
  * @param gwp_dx, gwp_dk GWP size
  */
-void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
+void WignerFunction::addWavePacket(
+    double gwp_x0, double gwp_dx,
     double gwp_k0, double gwp_dk) {
     double A = cD_*lC_ / (gwp_dx*gwp_dk*2*M_PI);
     cout<<"# Setting up GWP with parameters:\n"
@@ -354,27 +360,35 @@ void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
 /** 
  * Analitical solution of wave packet time evolution (no potential)
  */
-double WignerFunction::wavePacket_TEV(double gwp_x0, double gwp_dx,
-    double gwp_k0, double gwp_dk, double x, double k)
-    { return exp( -(k-gwp_k0)*(k-gwp_k0)/2./gwp_dk/gwp_dk
-        -(x-gwp_x0)*(x-gwp_x0)/2./gwp_dx/gwp_dx ) / M_PI; }
+double WignerFunction::wavePacket_TEV(
+    double gwp_x0, double gwp_dx,
+    double gwp_k0, double gwp_dk, 
+    double x, double k) {
+    return exp( -(k-gwp_k0)*(k-gwp_k0)/2./gwp_dk/gwp_dk
+        -(x-gwp_x0)*(x-gwp_x0)/2./gwp_dx/gwp_dx ) / M_PI;
+}
+
+
+// -------------------
+// Boundary conditions
+// -------------------
 
 
 /**
  * Boundary conditions
- * @todo implement armadillo convolution
+ * @todo implement armadillo convolution and simplify
  */
 void WignerFunction::setBoundCond(){
     uL_ = uBias_BC_ ? uL_ + uBias_ : uL_;
     Gamma_ = rG_*.5;
-    if (bcType_ == 1)
+    if (bcType_ == 0)
+        bc_.zeros();
+    else if (bcType_ == 1)
         for (size_t j=0; j<nk_; ++j)
             bc_(j) = supplyFunction(k_(j));
-    else if (bcType_ == 0)
-        bc_.zeros();
     else if (bcType_ == -1)
         for (size_t j=0; j<nk_; ++j)
-            bc_(j) = gaussian_bc(k_(j));
+            bc_(j) = gaussian(k_(j));
     else {
         if (rG_ > 0) {
             if (bcType_ == 2 || bcType_ == -2)
@@ -401,7 +415,7 @@ void WignerFunction::setBoundCond(){
         }
     }
     std::ofstream file;
-    file.open("OutData/BC.out", std::ios::out);
+    file.open("out/BC.out", std::ios::out);
     for (size_t j=0; j<nk_; ++j) {
         file<<k_(j)<<' '<<bc_(j)<<'\n';
     }
@@ -410,40 +424,28 @@ void WignerFunction::setBoundCond(){
 }
 
 
-/// Supply function (E(k))
+/**
+ * Supply function as a function of wave vector
+ * @param k wave vector
+ * @return supply function value
+ */
 double WignerFunction::supplyFunction(double k){
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
     if (ex < 700)
         return c * log(exp(ex)+1);
-    else{
-        if (ex > 0)
-            return c * ex;
-        else return 0;
-    }
-}
-
-/// Fermi dirac distribution
-double WignerFunction::fermiDirac(double k){
-    double mu = k > 0 ? uL_ : uR_;
-    double m = m_;
-    double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
-    return 1./(exp(ex)+1);
+    else
+        return ex > 0 ? c * ex : 0;
 }
 
 
-/// Maxwell-Boltzmann distribution
-double WignerFunction::maxwell_boltzmann(double k){;
-    double m = m_;
-    double c = cD_*pow(2*M_PI*m*KB/AU_eV*temp_, -3/2.);
-    double ex = exp(-k*k/2/2./(KB/AU_eV*temp_));
-    return c * ex;
-}
-
-
-/// Gaussian with sigma parameter
-double WignerFunction::gaussian_bc(double k){
+/**
+ * Gaussian as a function of wave vector
+ * @param k wave vector
+ * @return Gaussian value
+ */
+double WignerFunction::gaussian(double k) {
     double m = m_;
     double kBT = KB/AU_eV*temp_;
     double sigma = 1;
@@ -453,53 +455,56 @@ double WignerFunction::gaussian_bc(double k){
 }
 
 
-/// Supply function (x)
-inline double WignerFunction::sf_x(double mu, double x) {
+/**
+ * Supply function as a function of energy
+ * used for convolution with Lorentzian and Gauss profiles
+ * @param mu chemical potential
+ * @param energy energy at which supply function is calculated
+ * @return supply function value
+ */
+inline double WignerFunction::sf(double mu, double energy) {
     double m = m_;
-    double c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);     // [au]
+    double c = m/M_PI*KB/AU_eV*temp_, ex = -(energy-mu)/(KB/AU_eV*temp_);     // [au]
     if (ex < 700)
         return c * log(exp(ex)+1);
-    else{
-        if (ex > 0)
-            return c * ex;
-        else return 0;
-    }
+    else
+        return ex > 0 ? c * ex : 0;
 }
 
 
-/// Equilibrium function for electrons in contact
-double WignerFunction::eqFun_x(double mu, double x) {
-    double m = m_;
+/**
+ * Equilibrium function for electrons in contact
+ * for quantum boundary conditions -> supply function
+ * for classical boundary conditions -> 1D Maxwell-Boltzmann distribution
+ * @param mu chemical potential
+ * @param energy energy at which equilibrium function is calculated
+ * @return equilibrium function value
+ * @todo review classical part of the function, decide on the form of the function
+ * @see https://en.wikipedia.org/wiki/Maxwell-Boltzmann_distribution
+ */
+double WignerFunction::eqFun(double mu, double energy) {
     double kBT = KB/AU_eV*temp_;
-    double c, ex;
-    if (bcType_ > 0) {
-        c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);     // [au]
-        if (ex < 700)
-            return c * log(exp(ex)+1);
-        else{
-            if (ex > 0)
-                return c * ex;
-            else return 0;
-        }
-    }
-    else {
-        double sigma = 1;
-        c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
-        ex = exp(-x/kBT/sigma/sigma);     // [au]
-        return c * ex;
-    }
+    return bcType_ > 0 ? sf(mu, energy) : pow(2.*M_PI*kBT/m_,-1/2.) * exp(-energy/kBT);
 }
 
 
-/// Lorentz * SF convolution
-double WignerFunction::lorentz(double k){
+/**
+ * Lorentzian and supply function convolution
+ * @param k wave vector at which convolution is calculated
+ * @return Lorentzian and supply function convolution
+ */
+double WignerFunction::lorentz(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
     double beta = 1/(KB/AU_eV*temp_);
+    // ---------------
     // Lorentz profile
+    // ---------------
     auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
-    // convolution
+    // -----------
+    // Convolution
+    // -----------
     size_t N = 1e4, i;
     double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
     double fb = 0;
@@ -507,25 +512,23 @@ double WignerFunction::lorentz(double k){
     for (i=1; i<N-1; i++){
         x0 = i*h, x1 = (i+1)*h;
         xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun_x(mu, x0) +
-            32*f(xm1-u) * eqFun_x(mu, xm1) +
-            12*f(xm2-u) * eqFun_x(mu, xm2) +
-            32*f(xm3-u) * eqFun_x(mu, xm3) +
-            7*f(x1-u) * eqFun_x(mu, x1);
+        fb += 7*f(x0-u) * eqFun(mu, x0) +
+            32*f(xm1-u) * eqFun(mu, xm1) +
+            12*f(xm2-u) * eqFun(mu, xm2) +
+            32*f(xm3-u) * eqFun(mu, xm3) +
+            7*f(x1-u) * eqFun(mu, x1);
     }
     fb *= 2*h/4./45.;
-    //  a(N, arma::fill::zeros), b(N, arma::fill::zeros), c(N, arma::fill::zeros);
-    // for (i=0; i<N; ++i) {
-    //     b(i) = f(i*h-u), a(i) = sf_x(mu, i*h);
-    // }
-    // c = conv(a, b, "same");
-    // fb = sum(c);
     return fb;
 }
 
 
-/// Gauss * SF convolution
-double WignerFunction::gauss(double k){
+/**
+ * Gauss and supply function convolution
+ * @param k wave vector at which convolution is calculated
+ * @return Gauss and supply function convolution
+ */
+double WignerFunction::gauss(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
@@ -533,7 +536,7 @@ double WignerFunction::gauss(double k){
     // -------------
     // Gauss profile
     // -------------
-    auto f = [g](double x) { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
+    auto f = [g](double x) -> double { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
     // -----------
     // Convolution
     // -----------
@@ -544,17 +547,21 @@ double WignerFunction::gauss(double k){
     for (i=1; i<N-1; i++){
         x0 = i*h, x1 = (i+1)*h;
         xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun_x(mu, x0) +
-            32*f(xm1-u) * eqFun_x(mu, xm1) +
-            12*f(xm2-u) * eqFun_x(mu, xm2) +
-            32*f(xm3-u) * eqFun_x(mu, xm3) +
-            7*f(x1-u) * eqFun_x(mu, x1);
+        fb += 7*f(x0-u) * eqFun(mu, x0) +
+            32*f(xm1-u) * eqFun(mu, xm1) +
+            12*f(xm2-u) * eqFun(mu, xm2) +
+            32*f(xm3-u) * eqFun(mu, xm3) +
+            7*f(x1-u) * eqFun(mu, x1);
     }
     return fb*2*h/4./45.;
 }
 
 
-/// Voigt * SF convolution
+/**
+ * (pseudo-)Voigt profile and supply function convolution
+ * @param k wave vector at which convolution is calculated
+ * @return (pseudo-)Voigt profile and supply function convolution
+ */
 double WignerFunction::voigt(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
@@ -571,7 +578,7 @@ double WignerFunction::voigt(double k) {
     // ----------------------
     // (pseudo-)Voigt profile
     // ----------------------
-    auto f = [eta, g](double x)->double{ 
+    auto f = [eta, g](double x) -> double { 
         return eta*( g/(x*x+g*g)/M_PI ) +  // lorentz
                (1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) );  // gauss
         };
@@ -585,11 +592,11 @@ double WignerFunction::voigt(double k) {
     for (i=1; i<N-1; i++){
         x0 = i*h, x1 = (i+1)*h;
         xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun_x(mu, x0) +
-            32*f(xm1-u) * eqFun_x(mu, xm1) +
-            12*f(xm2-u) * eqFun_x(mu, xm2) +
-            32*f(xm3-u) * eqFun_x(mu, xm3) +
-            7*f(x1-u) * eqFun_x(mu, x1);
+        fb += 7*f(x0-u) * eqFun(mu, x0) +
+            32*f(xm1-u) * eqFun(mu, xm1) +
+            12*f(xm2-u) * eqFun(mu, xm2) +
+            32*f(xm3-u) * eqFun(mu, xm3) +
+            7*f(x1-u) * eqFun(mu, x1);
     }
     return fb*2*h/4./45.;
 }
@@ -604,7 +611,7 @@ double WignerFunction::voigt(double k) {
  * Density of states
  * @param m electron effective mass
  * @param T temperature
-*/
+ */
 inline double nC(double m, double T) { return 2.*pow(m*KB*T/AU_eV/2./M_PI, 3./2.); }  // [au]
 
 
@@ -612,7 +619,7 @@ inline double nC(double m, double T) { return 2.*pow(m*KB*T/AU_eV/2./M_PI, 3./2.
  * Calculates Fermi integral
  * @param n doping concentration
  * @param eta relative Fermi level: (Ec-Ef)/kb/T
-*/
+ */
 inline double fermiInt(double n, double eta) {
     auto fi = [n, eta](double x) { return pow(x, n)*exp(eta-x)/(exp(eta-x)+1); } ;
     size_t N = 100;
@@ -632,8 +639,9 @@ inline double fermiInt(double n, double eta) {
 
 
 /**
- * Calculates Fermi energy from el. density using Fermi integral
-*/
+ * Calculates Fermi energy from electron density using Fermi integral
+ * @param n0 electron density
+ */
 double calcFermiEn(double n0, double m, double T) {
     double eta = 0., f = 0.;
     double x = n0/nC(m, T);  // For GaAs, 300 K -> x = 4.6
@@ -662,81 +670,33 @@ double calcFermiEn(double n0, double m, double T) {
 }
 
 
-// ---------------
-// Other functions
-// ---------------
+// --------------
+// MISC
+// --------------
 
 
-void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
-    double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
-    double uBias = uBias_;
-    iv_v_.resize(nv), iv_i_.resize(nv);
-    iv_iRange_.resize(nv), iv_n_.resize(nv);
-    // double E;
-    std::ofstream ivChar, vpMap;
-    ivChar.open("OutData/ivChar.out", std::ios::out);
-    vpMap.open("OutData/vpMap.out", std::ios::out);
-    vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
-    ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-    // cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-    for (size_t i = 0; i < nv; ++i) {
-        v = v_min+i*dv;
-        // set_uBias(v);
-        // solveWignerEq();
-        solveWignerPoisson(v, 1e-5, 1, 1000, false);
-        curr = calcCurr();
-        currD_range = range(currD_);
-        carrNum = calcNorm();
-        calcCD_K();
-        // E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-        ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
-        // cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-        iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
-        for (size_t j=0; j<nk_; ++j) {
-                vpMap<<v*AU_eV<<' '<<k_(j)
-                    <<' '<<cdK_(j)
-                    // <<' '<<f_(size_t(nx_/4.),j)  // col. 3
-                    // <<' '<<f_(size_t(nx_/2.),j)  // col. 4
-                    // <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
-                    <<'\n';
-        }
-        vpMap<<'\n';
-    }
-    ivChar.close();
-    vpMap.close();
-    arma::vec fit = arma::polyfit(iv_v_, iv_i_, 1);
-    fit.print();
-    uBias_ = uBias;
+/** 
+ * Fermi dirac distribution
+ * to consider: camelCase -> snake_case, or vice versa, for all functions
+ * @param k wave vector
+ */
+double WignerFunction::fermiDirac(double k){
+    double mu = k > 0 ? uL_ : uR_;
+    double m = m_;
+    double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
+    return 1./(exp(ex)+1);
 }
 
 
-void WignerFunction::calcMobility() {
-
-    arma::vec el_f(nx_, arma::fill::zeros);
-    arma::vec mob(nx_, arma::fill::zeros);
-
-    calcCD_X();
-    calcCurr();
-    arma::vec dnedx = calcFirstDer(cdX_, dx_);
-
-    for (size_t i = 0; i < nx_; ++i)
-        el_f(i) = -du_(i);
-
-    for (size_t i = 0; i < nx_; ++i) {
-        double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
-        mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
-    }
-
-    /*
-    for (size_t i = 0; i < nx_; ++i)
-        cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
-            <<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
-    */
-
-    // Average mobility
-    double mob_av = 0;
-    for (size_t i = 1; i < nx_; ++i)
-        mob_av += (mob(i-1) + mob(i))*dx_/2./lD_;
-    cout<<m_<<' '<<mob_av<<endl;
-
+/** 
+ * Maxwell-Boltzmann distribution
+ * @param k wave vector
+ * @return Maxwell-Boltzmann distribution value
+ */
+double WignerFunction::maxwellBoltzmann(double k){;
+    double m = m_;
+    double c = cD_*pow(2*M_PI*m*KB/AU_eV*temp_, -3/2.);
+    double ex = exp(-k*k/2/2./(KB/AU_eV*temp_));
+    return c * ex;
 }
+

@@ -91,7 +91,7 @@ std::map<std::string, double> readParam(std::string filename){
  * Saves Wigner function to wf.out, wf.bin, and wf.z (GLE format) files
 */
 void WignerFunction::saveWignerFun() {
-    std::ofstream wf_out("OutData/wf.out");
+    std::ofstream wf_out("out/wf.out");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
 	    for (size_t j=0; j<nk_; ++j)
@@ -99,8 +99,8 @@ void WignerFunction::saveWignerFun() {
 	    wf_out<<"\n";
 	}
     wf_out.close();
-    f_.save("OutData/wf.bin");
-    wf_out.open("OutData/wf.z", std::ios::out);
+    f_.save("out/wf.bin");
+    wf_out.open("out/wf.z", std::ios::out);
     wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
     for (size_t j=0; j<nk_; ++j){
 	    for (size_t i=0; i<nx_; ++i)
@@ -313,17 +313,17 @@ void WignerFunction::saveTest() {
 	// out_data.insert_cols(7, f.get_d3u()), header(7) = "U''' [au]";  // col. 8
 	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";  // col. 9
 	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";  // col. 10
-    out_data.save( arma::csv_name("OutData/test.csv", header) );
+    out_data.save( arma::csv_name("out/test.csv", header) );
 
     std::ofstream file;
-    file.open("OutData/cdX.out", std::ios::out);
+    file.open("out/cdX.out", std::ios::out);
     file<<"# Carrier density in 'x' space\n";
     file<<"# x [au]  n(x) [au]\n";
     for (size_t i=0; i<nx_; ++i)
 	    file<<x_(i)<<'\t'<<cdX_(i)<<'\n';
     file.close();
 
-    file.open("OutData/cdK.out", std::ios::out);
+    file.open("out/cdK.out", std::ios::out);
     file<<"# Carrier density in 'k' space\n";
     file<<"# p [au]  n(k) [au]\n";
     for (size_t j=0; j<nk_; ++j)

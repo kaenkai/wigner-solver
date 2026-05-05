@@ -4,10 +4,14 @@
 using namespace AtomicUnits;
 
 
-/// Solve Wigner equation
+/** 
+ * Solve stationary Wigner equation
+ * @todo review armadillo options for sparse matrix solvers
+ */
 void WignerFunction::solveWignerEq(){
-
+    // Boundary conditions
     setBoundCond();
+
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
@@ -55,25 +59,17 @@ void WignerFunction::solveWignerEq(){
     for (size_t i=0; i<nx_; ++i)
         for (size_t j=0; j<nk_; ++j)
             f_(i,j) = x(i*nk_+j);
-
-    /*
-    // Checking A matrix
-    for (i=0; i<nxk_; ++i) {
-        for (j=0; j<nxk_; ++j) {
-            char ch = a_(i, j) != 0 ? '0' : '-';
-            cout<<ch<<' ';
-        }
-        cout<<endl;
-    }
-    */
-
 }
 
 
-/// Wigner function time evolution
+/** 
+ * Solve time dependent Wigner equation
+ * @todo review armadillo options for sparse matrix solvers
+ */
 void WignerFunction::solveTimeEv(){
-
+    // Boundary conditions
     setBoundCond();
+
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
@@ -110,7 +106,11 @@ void WignerFunction::solveTimeEv(){
 }
 
 
-/// Diffusion term
+/**
+ * Diffusion term
+ * @param i, j grid point indices
+ * @param dt time step, if dt < 0, diffusion term is calculated for stationary Wigner equation, otherwise for time evolution 
+ */
 void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
     // Fills Boltzmann equation matrix with diffusion term
     size_t r = i*nk_ + j;

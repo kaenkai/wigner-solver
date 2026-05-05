@@ -14,7 +14,8 @@ CXXFLAGS = -std=c++20 -g -O2\
 	-Wfloat-conversion
 CXX = g++ # icpc
 OBJS = src/WignerFunction.o \
-	src/wfIO.o src/WignerTools.o \
+	src/WignerIO.o \
+	src/WignerTools.o \
 	src/solveWignerPoisson.o \
 	src/Poisson1D.o \
 	src/TestPoisson1D.o \

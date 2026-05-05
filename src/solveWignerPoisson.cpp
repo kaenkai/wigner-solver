@@ -65,10 +65,10 @@ void WignerFunction::solveWignerPoisson
 
 	/// TODO: Pointers to functions
 
-    std::ofstream poisson_step("OutData/poisson_step.out");
+    std::ofstream poisson_step("out/poisson_step.out");
     poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 
-    std::ofstream tr_char("OutData/tr_char.csv");
+    std::ofstream tr_char("out/tr_char.csv");
     if ( timeDependent ) {
 	    tr_char<<"t[fs],J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U),max({/Symbol d}{/Symbol r}/{/Symbol r})"<<endl;
 	}
@@ -201,7 +201,7 @@ void WignerFunction::solveWignerPoisson
 	}
     poisson_step.close();
 
-    std::ofstream test("OutData/poisson_test.csv");
+    std::ofstream test("out/poisson_test.csv");
     test << "x [nm],U_{new} [eV],U_{old} [eV],{/Symbol d}U [eV],"
 	"{/Symbol r}_{new} [C/cm^{3}],{/Symbol r}_{old} [C/cm^{3}],"
 	"n_{E} [cm^{-3}],n_{D} [cm^{-3}],J [Acm^{-2}]"<<endl;
@@ -212,12 +212,12 @@ void WignerFunction::solveWignerPoisson
 	    test.close();
     saveWignerFun();
 
-    p.uNew_.save("OutData/poisson_pot.bin");
-    p.rho_.save("OutData/poisson_rho.bin");
+    p.uNew_.save("out/poisson_pot.bin");
+    p.rho_.save("out/poisson_rho.bin");
 
     uStart_ = p.uNew_;
 	// std::ofstream pot_out;
-	// pot_out.open("OutData/poisson_pot/poisson_pot.out", std::ios::out);
+	// pot_out.open("out/poisson_pot/poisson_pot.out", std::ios::out);
 	// pot_out<<"# i u(i)\n";
 	// for (size_t i=0; i<nx_; ++i)
 	// 	    pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';

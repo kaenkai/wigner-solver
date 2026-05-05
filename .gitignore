@@ -52,15 +52,21 @@
 *.in
 
 # Output data folder
-/OutData/*.png
-/OutData/*.out
-/OutData/*.csv
-/OutData/*.bin
-/OutData/*.z
-/OutData/GnuplotScripts/*.png
-!/OutData/GnuplotScripts/*.gp
-!/OutData
-out
+/out/*.png
+/out/*.out
+/out/*.csv
+/out/*.bin
+/out/*.z
+/out/GnuplotScripts/*.png
+!/out/GnuplotScripts/*.gp
+!/out
 
 # Idea files
 .idea/
+
+# Temporary files
+*.BAK
+*.bak
+*.backup
+*.tmp
+tmp/

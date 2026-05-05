@@ -280,32 +280,29 @@ public:
     void solveWignerPoisson(double, double, double, size_t, bool);
     void solveSchrEq();
 
-    void setBoundCond();  // Boundary conditions
-    void setEquilibriumFunction(std::string);  // Calculates equilibrium function
+    void setBoundCond();                        // Boundary conditions
+    void setEquilibriumFunction(std::string);   // Calculates equilibrium function
 
     void diffusionTerm(size_t, size_t, double);
     void driftTerm(size_t, size_t, double);
     void scatteringTerm(size_t, size_t, double);
     void quantumCorrTerm(size_t, size_t, double);
 
-    void solveMatrixEq();  // Wigner equation solved by solving matrix equation
+    double fermiDirac(double);      // Fermi-Dirac distribution
+    double supplyFunction(double);  // Supply function as function of wave vector
+    double sf(double, double);      // Supply function as function of energy (used for convolution with Lorentz/Gauss/Voigt profiles)
 
-    void calc_IVchar(double, double, size_t);
-    void calcMobility();
+    double maxwellBoltzmann(double);
+    double gaussian(double);
 
-    double fermiDirac(double);
-    double supplyFunction(double);  // Supply function
-    double sf_x(double, double);  // Supply function as function of x
+    double eqFun(double, double);
+    double lorentz(double);         // Lorentzian profile
+    double gauss(double);           // Gaussian profile
+    double voigt(double);           // (pseudo-)Voigt profile
 
-    double maxwell_boltzmann(double);
-    double gaussian_bc(double);
-
-    double eqFun_x(double, double);
-    double lorentz(double);  // Lorentz profile
-    double gauss(double);  // Gauss profile
-    double voigt(double);  // Voigt profile
-
-    // WignerTools.cpp
+    // ----------------------------
+    // Functions in WignerTools.cpp
+    // ----------------------------
     void setPotBias(double);
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);

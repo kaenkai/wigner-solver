@@ -16,25 +16,25 @@ int main(){
     // --------------------------------------------
     // Set up Wigner function and system parameters
     // --------------------------------------------
-    // size_t nx = 200, nk = 200;
-    // double lD = 1000/AU_nm, lC = 250/AU_nm;
-    // double k_max = 0.05;  // -1, 0.15
-    // WignerFunction f(nx, lD, lC, nk, k_max);
+    size_t nx = 200, nk = 200;
+    double lD = 1000/AU_nm, lC = 250/AU_nm;
+    double k_max = 0.05;  // -1, 0.15
+    WignerFunction f(nx, lD, lC, nk, k_max);
 
 	// ---------------------------------------
 	// System/simulation parameters
     // Constants are given in src/lib.hpp file
 	// ---------------------------------------
-    // f.set_m(M_GaAs);
-    // f.set_temp(TEMP);
-    // f.set_epsilonR(EPS_GaAs);
-    // f.set_cD(ND*AU_cm3); // Carrier density in [AU]
+    f.set_m(M_GaAs);
+    f.set_temp(TEMP);
+    f.set_epsilonR(EPS_GaAs);
+    f.set_cD(ND*AU_cm3); // Carrier density in [AU]
 
     // ---------------------------------
 	// Fermi level in left/right contact
     // ---------------------------------
-    // f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
-    // f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+    f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+    f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 
     // -----------------------------------
 	// Miscellaneous simulation parameters
@@ -50,22 +50,14 @@ int main(){
     // f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
     // f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
-    // ------------------------------------------------------------
-	// Setting up differentiation scheme
-    // Schemes implemented: "CDS1", "UDS1", "UDS2", "UDS3", "HDS22"
-	// ------------------------------------------------------------
-    // f.set_diffSch_K("UDS2");
-    // f.set_diffSch_P("UDS2");
-    // f.set_diffSch_J("UDS2");
-
 	// ------------------------------------------------
     // Boundary conditions
     // 0 -> 0 (closed system, no carrier inflow)
 	// 1 -> SF, 2:4 -> SF convolution
 	// -1 -> Gauss, -2:-4 -> Gauss function convolution
 	// ------------------------------------------------
-    // cout<<"# Setting up BC"<<endl;
-    // f.set_bcType(1);
+    cout<<"# Setting up BC"<<endl;
+    f.set_bcType(1);
 
     // --------------------------------------
     // Setting up potential bias and barriers
@@ -88,7 +80,7 @@ int main(){
     // Setting equilibrium function from file
 	// --------------------------------------
 	// if false Wigner/Boltzmann is solved for 0 bias and no dissipation
-    // f.setEquilibriumFunction("OutData/wf_feq_BP.bin", true);
+    // f.setEquilibriumFunction("out/wf_feq_BP.bin", true);
 
     // Print system parameters
     // f.printParam();
@@ -134,13 +126,13 @@ int main(){
     // ---------------------
     // Poisson equation test
     // ---------------------
-    cout<<"# Solving Poisson equation"<<endl;
+    // cout<<"# Solving Poisson equation"<<endl;
     // Poisson1D::testUniformCharge();
     // Poisson1D::testExponentCharge();
     // Poisson1D::testSineCharge();
     // Poisson1D::testGrid();
     // Poisson1D::testChargedPlane();
-    Poisson1D::testSelfConsistency();
+    // Poisson1D::testSelfConsistency();
 
     // -----------------
     // Boltzmann-Poisson
@@ -160,7 +152,7 @@ int main(){
     // f.solveSchrEq();
 
     // ----------------------------------------------------------------
-    // Printing and saving results to files located it "OutData" folder
+    // Printing and saving results to files located it "out" folder
     // ----------------------------------------------------------------
     // f.saveWignerFun();
     // f.saveTest();
