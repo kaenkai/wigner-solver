@@ -60,4 +60,4 @@ set key bottom right
 ##### Plot #####
 #
 
-plot 'dane/tev.out' u 1:2 w l ls 1 axes x1y1 notitle
+plot 'tev.dat' u 1:2 w l ls 1 axes x1y1 notitle

@@ -32,101 +32,54 @@ void WignerFunction::setEquilibriumFunction(std::string input_file = ""){
 
 
 /**
- * Calculates current density
- * @todo choose one differentiation scheme, review calculation method
+ * Calculates current density in accordance with Biegel PhD (p.132) and Frensley (1987)
+ * current density, being a vector, is most appropriately and accurately defined at the centerpoint between position grid nodes. 
+ * the discrete expression for current density depends on the form of the diffusion operator K .
+ * @return current density
+ * @see W. R. Frensley. Physical Review B, 36(3):1570–1580, 1987
  */ 
-double WignerFunction::calcCurr() {
-    currD_.zeros();  // Current density  // array<double>
-    double a = 2., b = 1.;
-    //  cur1 - current density in node i-1/2
-    //  cur2 - current density in node i+1/2
-    // Current density is calculated in node i+1/2
-    if (diffSch_J_ == "CDS1") {
-        for (size_t i=1; i<nx_; ++i) {
-            for (size_t j=0; j<nk2_; ++j)  // k < 0
-                currD_(i) += k_(j)*f_(i, j);
-                // currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
-            for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-                currD_(i) += k_(j)*f_(i-1, j);
-                // currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
-        }
-        currD_(0) = currD_(1);
-        currD_(nx_-1) = currD_(nx_-2);
+double WignerFunction::calcCurrentDensity() {
+    currD_.zeros();
+    double alpha = 2., beta = 1.;
+    for (size_t i=1; i<nx_-2; ++i) {
+        for (size_t j=0; j<nk2_; ++j)  // k < 0
+            currD_(i) += 
+                k_(j)*(
+                    alpha*f_(i,j) +
+                    (alpha+3*beta)*f_(i+1,j) -
+                    beta*f_(i+2,j)
+                );
+        for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+            currD_(i) += 
+                k_(j)*(
+                    alpha*f_(i+1,j) +
+                    (alpha+3*beta)*f_(i,j) -
+                    beta*f_(i-1,j)
+                );
     }
-    else if (diffSch_J_ == "UDS1") {
-        for (size_t i=1; i<nx_; ++i) {
-            for (size_t j=0; j<nk2_; ++j)  // k < 0
-                currD_(i) += k_(j)*f_(i, j);
-                // currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
-            for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-                currD_(i) += k_(j)*f_(i-1, j);
-                // currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
-            // currD_(i) /= 2.;
-            // currD_(i) -= rR_*(nc(i)-nc_eq(i));
-        }
-        currD_(0) = currD_(1);
-        currD_(nx_-1) = currD_(nx_-2);
-    }
-    else if (diffSch_J_ == "UDS2") {
-        for (size_t i=1; i<nx_-2; ++i) {
-            for (size_t j=0; j<nk2_; ++j)  // k < 0
-                currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j))*dk_/2./m_;
-                // currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j))*dk_/2./m_;  // j(i-1/2)
-            for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-                currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j))*dk_/2./m_;
-                // currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j))*dk_/2./m_;  // j(i-1/2)
-        }
-        currD_(0) = currD_(1);
-        currD_(nx_-2) = currD_(nx_-3);
-        currD_(nx_-1) = currD_(nx_-2);
-    }
-    else if (diffSch_J_ == "UDS3") {
-        for (size_t i=2; i<nx_-3; ++i) {
-            for (size_t j=0; j<nk2_; ++j)  // k < 0
-                currD_(i) += k_(j)*(2*f_(i+3,j)-7*f_(i+2,j)+11*f_(i+1,j))*dk_/6./m_;
-            for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-                currD_(i) += k_(j)*(2*f_(i-2,j)-7*f_(i-1,j)+11*f_(i,j))*dk_/6./m_;
-        }
-        currD_(1) = currD_(2);
-        currD_(0) = currD_(1);
-        currD_(nx_-3) = currD_(nx_-4);
-        currD_(nx_-2) = currD_(nx_-3);
-        currD_(nx_-1) = currD_(nx_-2);
-    }
-    else if (diffSch_J_ == "HDS22") {
-        for (size_t i=1; i<nx_-2; ++i) {
-            for (size_t j=0; j<nk2_; ++j)  // k < 0
-                currD_(i) += k_(j)*dk_/m_*(a*f_(i,j)+(a+3*b)*f_(i+1,j)-b*f_(i+2,j))/2./(a+b);
-            for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-                currD_(i) += k_(j)*dk_/m_*(a*f_(i+1,j)+(a+3*b)*f_(i,j)-b*f_(i-1,j))/2./(a+b);
-        }
-        currD_(0) = currD_(1);
-        currD_(nx_-2) = currD_(nx_-3);
-        currD_(nx_-1) = currD_(nx_-2);
-    }
-    else {
-        cout<<"ERROR: WRONG DIFFERENTIATION SCHEME IN CURRENT DENSITY. "
-        "PLEASE CHOOSE: UDS1, UDS2, UDS3 OR HDS22"<<endl;
-        exit(0);
-    }
-    if (bcType_ > 0) currD_ /= 2.*M_PI;
+    currD_(0) = currD_(1);
+    currD_(nx_-2) = currD_(nx_-3);
+    currD_(nx_-1) = currD_(nx_-2);
+    if (bcType_ > 0) currD_ *= dk_/m_/4./M_PI/(alpha+beta);
     return sum(currD_)*dx_/l_;
 }
 
 
 /**
  * Calculates carrier density in x space
- * @todo decide on trapezoid or simpson method
  */
 arma::vec WignerFunction::calcCD_X(){
-    cdX_.zeros();
+    arma::vec cdX(nx_, arma::fill::zeros);
     for (size_t i=nx_; i--;) {
         for (size_t j=1; j<nk_/2; ++j)
-            // cdX_(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
-            cdX_(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
+            cdX(i) += (
+                f_(i,2*j-2) +
+                4*f_(i,2*j-1) +
+                f_(i,2*j)
+            )*dk_/3.;
     }
-    if (bcType_ > 0) cdX_ /= 2.*M_PI;
-    return cdX_;
+    cdX /= 2.*M_PI;
+    return cdX;
 }
 
 
@@ -134,13 +87,16 @@ arma::vec WignerFunction::calcCD_X(){
  * Calculates carrier density in k space
  */
 arma::vec WignerFunction::calcCD_K(){
-    cdK_.zeros();
+    arma::vec cdK(nx_, arma::fill::zeros);
     for (size_t j=nk_; j--;) {
         for (size_t i=1; i<nx_/2; ++i)
-            // cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;  // trapezoid
-            cdK_(j) += (f_(2*i-2,j)+4*f_(2*i-1,j)+f_(2*i,j))*dx_/3.;  // simpson
+            cdK(j) += (
+                f_(2*i-2,j) +
+                4*f_(2*i-1,j) +
+                f_(2*i,j)
+            )*dx_/3.;  // simpson
     }
-    return cdK_;
+    return cdK;
 }
 
 
@@ -285,21 +241,6 @@ double WignerFunction::calcSDX(){
     return sqrt(ev2-ev*ev);
 }
 
-
-/** 
- * Sets system potential as linear drop from uBias/2 to -uBias/2
- * @param uBias - potential bias
- */ 
-void WignerFunction::setPotBias(double uBias) {
-    uBias_ = uBias;
-    uC_.zeros();
-    double x;
-    for (size_t i = 0; i < nx_; ++i) {
-        x = x_(i);
-        uC_(i) = uBias_*(0.5-x/l_);
-    }
-}
-
 /** 
  * Adds gaussian barrier
  * @param u0 height
@@ -379,7 +320,6 @@ double WignerFunction::wavePacket_TEV(
  * @todo implement armadillo convolution and simplify
  */
 void WignerFunction::setBoundCond(){
-    uL_ = uBias_BC_ ? uL_ + uBias_ : uL_;
     Gamma_ = rG_*.5;
     if (bcType_ == 0)
         bc_.zeros();
@@ -415,9 +355,11 @@ void WignerFunction::setBoundCond(){
         }
     }
     std::ofstream file;
-    file.open("out/BC.out", std::ios::out);
+    file.open("output/BC.dat", std::ios::out);
+    file<<"# Boundary conditions\n";
+    file<<"p\tBC\n";
     for (size_t j=0; j<nk_; ++j) {
-        file<<k_(j)<<' '<<bc_(j)<<'\n';
+        file<<k_(j)<<'\t'<<bc_(j)<<'\n';
     }
     file<<"# "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3;
     file.close();
@@ -446,12 +388,7 @@ double WignerFunction::supplyFunction(double k){
  * @return Gaussian value
  */
 double WignerFunction::gaussian(double k) {
-    double m = m_;
-    double kBT = KB/AU_eV*temp_;
-    double sigma = 1;
-    double c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
-    double ex = exp(-(k*k/2./m)/kBT/sigma/sigma);  // (k-pF)*(k-pF)
-    return c * ex;
+    return pow((2.*M_PI),-1/2.) * exp(-k*k/2.);
 }
 
 
@@ -691,12 +628,10 @@ double WignerFunction::fermiDirac(double k){
 /** 
  * Maxwell-Boltzmann distribution
  * @param k wave vector
- * @return Maxwell-Boltzmann distribution value
+ * @return Maxwell-Boltzmann distribution   value
  */
-double WignerFunction::maxwellBoltzmann(double k){;
-    double m = m_;
-    double c = cD_*pow(2*M_PI*m*KB/AU_eV*temp_, -3/2.);
-    double ex = exp(-k*k/2/2./(KB/AU_eV*temp_));
-    return c * ex;
+double WignerFunction::maxwellBoltzmann(double k){
+    return cD_*pow(2*M_PI*m_*KB/AU_eV*temp_, -3/2.) * 
+           exp(-k*k/2/2./(KB/AU_eV*temp_));
 }
 

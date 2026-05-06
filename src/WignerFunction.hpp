@@ -20,26 +20,20 @@ class WignerFunction{
     double dk_;  // k-space step size (Brillouin zone / Nk)
     size_t nk2_, nxk_;  // x/k-space nr of steps
 
-    double dt_ = 1e-15/AU_s;  // time step size (1 fs)
-    double courant_num_;  // Courant number
+    double dt_ = 0;  // time step size (1 fs)
 
-    double m_ = 0.067;
-    double temp_ = 77;  // Contacts temperature [K]
-    double beta_ = 1./KB/temp_*AU_eV;  // beta = 1/kb/T
-    double uR_ = 0.087/AU_eV, uL_ = 0.087/AU_eV;  // Fermi energy in left/right contact
-    double cD_ = 2e18/AU_cm3;  // cL_, cR_;
-    double epsilonR_ = 13.1;  // relative permitivitty (for GaAs)
+    double m_ = 1;
+    double temp_ = 300;                              // Contacts temperature [K]
+    double uR_ = 1, uL_ = 1;    // Fermi energy in right/left contact
+    double cD_ = 1;                       // dopant concentration in contacts [AU]
+    double epsilonR_ = 1;                        // relative permitivitty (for GaAs)
 
-    double uBias_ = 0;  // bias voltage [eV]
+    double uBias_ = 0;                                      // bias voltage [eV]
     double rR_ = 0, rM_ = 0, rG_ = 0, Gamma_ = 0, rF_ = 0;  // Scattering rate (1/tau)
-    double lambda_ = 0;  // Localization rate
-    int bcType_ = 1;  // boundary condition type
+    double lambda_ = 0;                                     // Localization rate
+    int bcType_ = 1;                                        // boundary condition type, 1 -> Supply function
 
-    // device cross section (1um x 1um)
-    double lYZ_ = 1e-6*1e-6 * 1e18/AU_nm/AU_nm;
-    double part_num_ = 1e5;  // particle number
-
-    bool useNLP_, useQC_, uBias_BC_;  // bool variables
+    bool useNLP_, useQC_;  // bool variables
     std::string diffSch_K_ = "UDS2", diffSch_P_ = "UDS2";
     std::string diffSch_J_ = "UDS2";
 
@@ -53,7 +47,6 @@ class WignerFunction{
     arma::vec uB_;      // Band offset
     arma::vec du_;      // Potential derivative
     arma::vec d3u_;     // Potential third derivative
-    arma::vec uStart_;  // Potential
     arma::vec bc_;      // Boundary condition
     arma::vec x_;       // Position values
     arma::vec k_;       // Wave vector values
@@ -92,7 +85,6 @@ public:
         uB_(arma::vec(nx_, arma::fill::zeros)),
         du_(arma::vec(nx_, arma::fill::zeros)),
         d3u_(arma::vec(nx_, arma::fill::zeros)),
-        uStart_(arma::vec(nx_, arma::fill::zeros)),
         bc_(arma::vec(nk_, arma::fill::zeros)),
         x_(arma::vec(nx_, arma::fill::zeros)),
         k_(arma::vec(nk_, arma::fill::zeros)),
@@ -142,7 +134,6 @@ public:
         uB_(arma::vec(nx_, arma::fill::zeros)),
         du_(arma::vec(nx_, arma::fill::zeros)),
         d3u_(arma::vec(nx_, arma::fill::zeros)),
-        uStart_(arma::vec(nx_, arma::fill::zeros)),
         bc_(arma::vec(nk_, arma::fill::zeros)),
         x_(arma::vec(nx_, arma::fill::zeros)),
         k_(arma::vec(nk_, arma::fill::zeros)),
@@ -192,19 +183,13 @@ public:
     double get_rF() { return rF_; }
     double get_rG() { return rG_; }
     double get_lambda() { return lambda_; }
-    // double get_lDeb() { return sqrt(epsilonR_/4/M_PI*KB*temp_/AU_eV/cD_); }  // Debye length = sqrt(13.1*EPS0*1.380649E-23*300/(E0*E0*2E24))
-    // double get_plFreq() { return sqrt(cD_/epsilonR_/m_*4*M_PI); }  // Plasma frequency = sqrt(EO*E0*2E24/13.1/EPS0/m)
     arma::vec get_x_arr() { return x_; }
     arma::vec get_k_arr() { return k_; }
     arma::vec get_u() { return u_; }
     arma::vec get_uB() { return uB_; }
     arma::vec get_uC() { return uC_; }
-    arma::vec get_uStart() { return uStart_; }
     arma::vec get_du() { return du_; }
     arma::vec get_d3u() { return d3u_; }
-    arma::vec get_currD() { return currD_; }
-    arma::vec get_cdX() { return cdX_; }
-    arma::vec get_cdK() { return cdK_; }
     arma::vec get_nD() { return nD_; }
     arma::vec get_bc() { return bc_; }
     arma::mat get_wf() { return f_; }
@@ -212,33 +197,33 @@ public:
     void set_m(double m) { m_ = m; }
     void set_temp(double temp) { temp_ = temp; }
     void set_cD(double cD) { cD_ = cD; }
-    void set_uL(double uL) { uL_ = uL; }
-    void set_uR(double uR) { uR_ = uR; }
+
     void set_dt(double dt) {
         dt_ = dt;
-        courant_num_ = dt_*kmax_/m_/dx_;
     }
+
     void set_rR(double rR) { rR_ = rR; }
     void set_rM(double rM) { rM_ = rM; }
     void set_rF(double rF) { rF_ = rF; }
     void set_rG(double rG) { rG_ = rG; }
     void set_lambda(double lambda) { lambda_ = lambda; }
     void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
-    void set_uBias(double uBias) { uBias_ = uBias; }
     void set_useNLP(bool useNLP) { useNLP_ = useNLP; }
     void set_useQC(bool useQC) { useQC_ = useQC; }
-    void set_uBias_BC(bool uBias_BC) { uBias_BC_ = uBias_BC; }
     void set_bcType(int bcType) { bcType_ = bcType; }
-    void set_lYZ(double lYZ) { lYZ_ = lYZ; }
-    void set_part_num(double part_num) { part_num_ = part_num; }
+
+    void set_uL(double uL) { uL_ = uL; }
+    void set_uR(double uR) { uR_ = uR; }
+    void set_uBias(double uBias) {
+        uBias_ = uBias;
+        uL_ += uBias_;
+    }
     void set_uC(arma::vec uC) { 
         uC_ = uC; 
         u_ = uB_ + uC_;
     }
+
     void set_wf(arma::mat f) { f_ = f; }
-    void set_diffSch_K(std::string diffSch_K) { diffSch_K_ = diffSch_K; }
-    void set_diffSch_P(std::string diffSch_P) { diffSch_P_ = diffSch_P; }
-    void set_diffSch_J(std::string diffSch_J) { diffSch_J_ = diffSch_J; }
 
     /** 
      * Sets up doping profile
@@ -249,17 +234,7 @@ public:
             nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
     }
 
-    void load_poisson_pot(std::string file) {
-        uStart_.load(file);
-        if (uStart_.size() != nx_) {
-            cout<<"ERROR IN load_poisson_pot: uStart_.size() != nx_"<<endl;
-            exit(0);
-        }
-        else
-            cout<<"## Poisson potential loaded from file: "<<file<<endl;
-    }
-
-    double calcCurr();  // Current density
+    double calcCurrentDensity();  // Current density
     double calcNorm();
     double calcEX();
     double calcEK();
@@ -269,7 +244,6 @@ public:
     arma::vec calcCD_X();
     arma::vec calcCD_K();
 
-    void readPotential(std::string);  // Read potential from file pot.in
     void printParam();
     void saveWignerFun();
     void saveTest();
@@ -303,7 +277,6 @@ public:
     // ----------------------------
     // Functions in WignerTools.cpp
     // ----------------------------
-    void setPotBias(double);
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);
     void addWavePacket(double, double, double, double);

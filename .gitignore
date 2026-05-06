@@ -28,7 +28,7 @@
 
 # Executables
 *.exe
-*.out
+*.output
 *.app
 
 # Output plots
@@ -42,7 +42,7 @@
 
 # Output files
 *.dat
-*.out
+*.output
 *.z
 *.csv
 *.bin
@@ -52,14 +52,14 @@
 *.in
 
 # Output data folder
-/out/*.png
-/out/*.out
-/out/*.csv
-/out/*.bin
-/out/*.z
-/out/GnuplotScripts/*.png
-!/out/GnuplotScripts/*.gp
-!/out
+/output/*.png
+/output/*.output
+/output/*.csv
+/output/*.bin
+/output/*.z
+/output/GnuplotScripts/*.png
+!/output/GnuplotScripts/*.gp
+!/output
 
 # Idea files
 .idea/

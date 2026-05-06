@@ -28,9 +28,9 @@ set key top left
 
 AU_nm = 0.0529; E0 = 1.602E-19; AU_cm2 = 2.8e-17; AU_cm = 5.29e-9
 
-plot '../ivChar.out' u ($1*1e3):2 w lp ls 1 notitle
-# plot '../ivChar_ND.out' u ($1*1e3):2 w lp ls 1 title "No dissipation",\
-#     '../ivChar_tR1e-10.out' u ($1*1e3):2 w lp ls 2 title "{/Symbol t}_R = 10^{-10} s",\
-#     '../ivChar_tR1e-11.out' u ($1*1e3):2 w lp ls 3 title "{/Symbol t}_R = 10^{-11} s",\
-#     '../ivChar_tM1e-10.out' u ($1*1e3):2 w lp ls 4 title "{/Symbol t}_M = 10^{-10} s",\
-#     '../ivChar_tM1e-11.out' u ($1*1e3):2 w lp ls 5 title "{/Symbol t}_M = 10^{-11} s"
+plot 'ivChar.dat' u ($1*1e3):2 w lp ls 1 notitle
+# plot 'ivChar_ND.dat' u ($1*1e3):2 w lp ls 1 title "No dissipation",\
+#     'ivChar_tR1e-10.dat' u ($1*1e3):2 w lp ls 2 title "{/Symbol t}_R = 10^{-10} s",\
+#     'ivChar_tR1e-11.dat' u ($1*1e3):2 w lp ls 3 title "{/Symbol t}_R = 10^{-11} s",\
+#     'ivChar_tM1e-10.dat' u ($1*1e3):2 w lp ls 4 title "{/Symbol t}_M = 10^{-10} s",\
+#     'ivChar_tM1e-11.dat' u ($1*1e3):2 w lp ls 5 title "{/Symbol t}_M = 10^{-11} s"

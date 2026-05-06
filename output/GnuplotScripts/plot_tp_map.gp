@@ -1,5 +1,5 @@
-set terminal pngcairo enhanced size 500,500 # font 'Times Roman, 12'
-set output 'vpMap.png'
+set terminal pngcairo enhanced font "Times New Roman,12.0" size 800,800
+set output 'tpMap.png'
 
 set multiplot
 
@@ -9,34 +9,26 @@ set style line 3 lc rgb '#FF0000' lw 2 dashtype 1
 set style line 4 lc rgb '#008000' lw 2 dashtype 1
 set style line 5 lc rgb '#800000' lw 2 dashtype 1
 
-# set palette rgbformulae 30,31,32
-# set hidden3d
-# set ticslevel 0.8
-# set isosample 50
 set pm3d map interpolate 0,0
 
 set border linecolor rgb "white" lw 1
-# set grid linecolor "white" lw 2
-
-# set title '{/Symbol t}_R = 1x10^{-12} s, J = 3.71568x10^{06} A/cm^2'
 
 set ylabel 'p [a.u.]' textcolor "black" # offset -0.5,0
-set xlabel 'U_{bias} [meV]' # offset 0,-0.5
+set xlabel '{/Symbol t} [s]' # offset 0,-0.5
 
 set xtics textcolor "black" # 0,0.1,0.4
-set ytics textcolor "black" # -0.1,0.05,0.1
+set ytics textcolor "black" -0.04,0.01,0.04
 
 set mxtics
 set mytics
 
-set cbrange [0:]
-set cbtics textcolor "black"
-set cblabel 'Density function [a.u.]' offset 1
+set logscale x
 
-# set format cb "%.1tx10^{%T}"
+set cbrange [:]
+set cbtics textcolor "black"
+set cblabel 'f(p) [au]' offset 1
 
 set border linecolor rgb "white" lw 1
-# set grid linecolor "white" lw 2
 
 unset key
 
@@ -46,7 +38,8 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-splot [0:] [:] '../vpMap.out' u 1:2:3 with pm3d
+splot [1e-13:1e-10] [-0.06:0.06] 'tpMap.dat' u 1:2:3
+# splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"

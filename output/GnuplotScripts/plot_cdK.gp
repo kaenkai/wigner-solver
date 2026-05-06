@@ -24,4 +24,4 @@ set key top left
 
 AU_nm = 0.0529; E0 = 1.602E-19; AU_cm2 = 2.8e-17; AU_cm = 5.29e-9
 
-plot '../cdK.out' u 1:2 w l ls 1 notitle
+plot 'cdK.dat' u 1:2 w l ls 1 notitle

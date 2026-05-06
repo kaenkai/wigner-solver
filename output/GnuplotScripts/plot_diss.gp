@@ -30,9 +30,9 @@ set logscale x
 
 AU_nm = 0.0529; E0 = 1.602E-19; AU_Acm2 = 2.364e14; AU_cm2 = 2.8e-17
 
-file1 = '../diss_tau-tR.out'
-file2 = '../diss_tau-tM.out'
-file3 = '../diss_tau-tRM.out'
+file1 = '../diss_tau-tR.dat'
+file2 = '../diss_tau-tM.dat'
+file3 = '../diss_tau-tRM.dat'
 
 plot file1 u 2:5 w l ls 2 title '{/Symbol t} = {/Symbol t}_R',\
     file2 u 2:5 w l ls 3 title '{/Symbol t} = {/Symbol t}_M',\

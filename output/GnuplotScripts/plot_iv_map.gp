@@ -1,5 +1,5 @@
-set terminal pngcairo enhanced font "Times New Roman,12.0" size 800,800
-set output 'tpMap.png'
+set terminal pngcairo enhanced size 600,600 # font 'Times Roman, 12'
+set output 'ivMap.png'
 
 set multiplot
 
@@ -13,11 +13,11 @@ set pm3d map interpolate 0,0
 
 set border linecolor rgb "white" lw 1
 
-set ylabel 'p [a.u.]' textcolor "black" # offset -0.5,0
+set ylabel 'v [a.u.]' textcolor "black" # offset -0.5,0
 set xlabel '{/Symbol t} [s]' # offset 0,-0.5
 
 set xtics textcolor "black" # 0,0.1,0.4
-set ytics textcolor "black" -0.04,0.01,0.04
+set ytics textcolor "black" # -0.04,0.01,0.04
 
 set mxtics
 set mytics
@@ -26,19 +26,19 @@ set logscale x
 
 set cbrange [:]
 set cbtics textcolor "black"
-set cblabel 'f(p) [au]' offset 1
+set cblabel 'j [au]' offset 1
 
 set border linecolor rgb "white" lw 1
 
 unset key
 
 set size 0.8,1.1
-set origin .04,0
+set origin .08,0
 
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-splot [1e-13:1e-10] [-0.06:0.06] '../tpMap.out' u 1:2:3
+splot [1e-13:1e-10] [:] 'ivMap.dat' u 1:2:3 with pm3d
 # splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 

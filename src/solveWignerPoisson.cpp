@@ -35,9 +35,8 @@ void WignerFunction::solveWignerPoisson
     Poisson1D p(nx_, dx_);  // Setting up Poisson solver
     p.set_boundary_conditions(u_bias/2., -u_bias/2.);  // Dirichlet BC
     p.set_epsilonR(epsilonR_), p.set_temp(temp_);   // Permittivity and temperature
-	// p.uNew_ = uStart_, p.uOld_ = uStart_;  // Starting potential values
     p.uNew_.zeros(), p.uOld_.zeros(); 
-    p.set_beta(beta);  // Potential mixing parameter
+    // p.set_beta(beta);  // Potential mixing parameter
 
 	//
 	// Doping profile
@@ -49,7 +48,6 @@ void WignerFunction::solveWignerPoisson
     p.rho_.zeros();
     p.solve();
 	// Start electron concentration
-	// uC_ = uStart_;
     uC_ = p.uNew_;
     solveWignerEq();
     calcCD_X();
@@ -65,10 +63,10 @@ void WignerFunction::solveWignerPoisson
 
 	/// TODO: Pointers to functions
 
-    std::ofstream poisson_step("out/poisson_step.out");
+    std::ofstream poisson_step("output/poisson_step.dat");
     poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 
-    std::ofstream tr_char("out/tr_char.csv");
+    std::ofstream tr_char("output/tr_char.csv");
     if ( timeDependent ) {
 	    tr_char<<"t[fs],J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U),max({/Symbol d}{/Symbol r}/{/Symbol r})"<<endl;
 	}
@@ -99,7 +97,7 @@ void WignerFunction::solveWignerPoisson
 	    uC_ = p.uNew_;
 	    timeDependent ? solveTimeEv() : solveWignerEq();
 	    calcCD_X(); // calcCD_K();
-	    curr = calcCurr();
+	    curr = calcCurrentDensity();
 	    j0 = j1, j1 = currD_;
 
 		//
@@ -201,7 +199,7 @@ void WignerFunction::solveWignerPoisson
 	}
     poisson_step.close();
 
-    std::ofstream test("out/poisson_test.csv");
+    std::ofstream test("output/poisson_test.csv");
     test << "x [nm],U_{new} [eV],U_{old} [eV],{/Symbol d}U [eV],"
 	"{/Symbol r}_{new} [C/cm^{3}],{/Symbol r}_{old} [C/cm^{3}],"
 	"n_{E} [cm^{-3}],n_{D} [cm^{-3}],J [Acm^{-2}]"<<endl;
@@ -212,15 +210,7 @@ void WignerFunction::solveWignerPoisson
 	    test.close();
     saveWignerFun();
 
-    p.uNew_.save("out/poisson_pot.bin");
-    p.rho_.save("out/poisson_rho.bin");
-
-    uStart_ = p.uNew_;
-	// std::ofstream pot_out;
-	// pot_out.open("out/poisson_pot/poisson_pot.out", std::ios::out);
-	// pot_out<<"# i u(i)\n";
-	// for (size_t i=0; i<nx_; ++i)
-	// 	    pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';
-	// pot_out.close();
+    p.uNew_.save("output/poisson_pot.bin");
+    p.rho_.save("output/poisson_rho.bin");
 
 }

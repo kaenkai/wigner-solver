@@ -88,10 +88,10 @@ std::map<std::string, double> readParam(std::string filename){
 
 
 /**
- * Saves Wigner function to wf.out, wf.bin, and wf.z (GLE format) files
+ * Saves Wigner function to wf.dat, wf.bin, and wf.z (GLE format) files
 */
 void WignerFunction::saveWignerFun() {
-    std::ofstream wf_out("out/wf.out");
+    std::ofstream wf_out("output/wf.dat");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
 	    for (size_t j=0; j<nk_; ++j)
@@ -99,8 +99,8 @@ void WignerFunction::saveWignerFun() {
 	    wf_out<<"\n";
 	}
     wf_out.close();
-    f_.save("out/wf.bin");
-    wf_out.open("out/wf.z", std::ios::out);
+    f_.save("output/wf.bin");
+    wf_out.open("output/wf.z", std::ios::out);
     wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
     for (size_t j=0; j<nk_; ++j){
 	    for (size_t i=0; i<nx_; ++i)
@@ -108,38 +108,6 @@ void WignerFunction::saveWignerFun() {
 	    wf_out<<'\n';
 	}
     wf_out.close();
-}
-
-
-void WignerFunction::readPotential(std::string input_file){
-    std::ifstream input_pot (input_file);
-    arma::vec x(nx_, arma::fill::zeros), u(nx_, arma::fill::zeros);
-    size_t j = 0;
-    std::string::size_type sz;
-    if(!input_pot) {
-	    cout<<"# COULDN'T OPEN AN POTENTIAL INPUT FILE: "<<input_file<<endl;
-	    exit(0);
-	}
-    else {
-	    cout<<"# READING POTENTIAL FROM FILE: "<<input_file<<endl;
-	    std::string line;
-	    while ( getline (input_pot,line) ){
-		    if (line[0] != '#'){
-			    try {
-				    x(j) = std::stod(line, &sz), u(j) = std::stod(line.substr(sz));
-					++j;
-				} catch (const std::invalid_argument& ia) {
-				    cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
-				    exit(0);
-				} catch (const std::logic_error& ie) {
-				    cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ie.what() << endl;
-				    exit(0);
-				}
-			}
-		}
-	    input_pot.close();
-	}
-    uStart_ = u;
 }
 
 
@@ -179,9 +147,6 @@ void WignerFunction::printParam()
     cout.width(cw_n); cout<<"# L_D";
     cout.width(cw_v); cout<<lD_;
     cout.width(cw_v); cout<<lD_*AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# L_YZ";
-    cout.width(cw_v); cout<<lYZ_;
-    cout.width(cw_v); cout<<lYZ_*AU_nm*AU_nm<<'#'<<endl;
     cout.width(cw_n); cout<<"# kmax";
     cout.width(cw_v); cout<<kmax_;
     cout.width(cw_v); cout<<kmax_/AU_nm<<'#'<<endl;
@@ -202,8 +167,6 @@ void WignerFunction::printParam()
     cout.width(cw_v); cout<<dx_*dk_;
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	// ////////// Time dependency parameters //////////
-    cout.width(cw_n); cout<<"# courant_num";
-    cout.width(cw_v); cout<<courant_num_;
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
     cout.width(cw_n); cout<<"# dt";
     cout.width(cw_v); cout<<dt_;
@@ -313,17 +276,17 @@ void WignerFunction::saveTest() {
 	// out_data.insert_cols(7, f.get_d3u()), header(7) = "U''' [au]";  // col. 8
 	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";  // col. 9
 	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";  // col. 10
-    out_data.save( arma::csv_name("out/test.csv", header) );
+    out_data.save( arma::csv_name("output/test.csv", header) );
 
     std::ofstream file;
-    file.open("out/cdX.out", std::ios::out);
+    file.open("output/cdX.dat", std::ios::out);
     file<<"# Carrier density in 'x' space\n";
     file<<"# x [au]  n(x) [au]\n";
     for (size_t i=0; i<nx_; ++i)
 	    file<<x_(i)<<'\t'<<cdX_(i)<<'\n';
     file.close();
 
-    file.open("out/cdK.out", std::ios::out);
+    file.open("output/cdK.dat", std::ios::out);
     file<<"# Carrier density in 'k' space\n";
     file<<"# p [au]  n(k) [au]\n";
     for (size_t j=0; j<nk_; ++j)
@@ -333,7 +296,7 @@ void WignerFunction::saveTest() {
 
 
 void WignerFunction::printResults() {
-    double curr = calcCurr();
+    double curr = calcCurrentDensity();
     calcCD_X(), calcCD_K();
 	// cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;
 	// cout<<"Plasma frequency: "<<f.get_plFreq()/AU_s<<", 1/Plasma frequency: "<<1/f.get_plFreq()*AU_s<<endl;

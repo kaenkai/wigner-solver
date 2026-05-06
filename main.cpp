@@ -17,9 +17,9 @@ int main(){
     // Set up Wigner function and system parameters
     // --------------------------------------------
     size_t nx = 200, nk = 200;
-    double lD = 1000/AU_nm, lC = 250/AU_nm;
-    double k_max = 0.05;  // -1, 0.15
-    WignerFunction f(nx, lD, lC, nk, k_max);
+    double lD = 1000, lC = 0;
+    double k_max = 0.04;
+    WignerFunction f(nx, lD, lC, nk, k_max);    
 
 	// ---------------------------------------
 	// System/simulation parameters
@@ -40,9 +40,8 @@ int main(){
 	// Miscellaneous simulation parameters
     // -----------------------------------
     // f.set_dt(0.1E-15/AU_s);
-    // f.set_useQC(false);  // Quantum correction term (third 'p' derivative)?
-    // f.set_useNLP(false);  // Calculations with non-local potential?
-    // f.set_uBias_BC(true);  // Voltage bias given through BC?
+    // f.set_useQC(false);      // Quantum correction term (third 'p' derivative)?
+    // f.set_useNLP(false);     // Calculations with non-local potential?
 
 	// -----------------
     // Dissipation terms
@@ -50,40 +49,38 @@ int main(){
     // f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
     // f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
-	// ------------------------------------------------
-    // Boundary conditions
-    // 0 -> 0 (closed system, no carrier inflow)
-	// 1 -> SF, 2:4 -> SF convolution
-	// -1 -> Gauss, -2:-4 -> Gauss function convolution
-	// ------------------------------------------------
-    cout<<"# Setting up BC"<<endl;
-    f.set_bcType(1);
-
     // --------------------------------------
     // Setting up potential bias and barriers
 	// --------------------------------------
-    // cout<<"# Setting up potential"<<endl;
-    // double u_bias = 0.0/AU_eV;
-    // f.set_uBias(u_bias);
-    // f.setPotBias(0.1/AU_eV);
+    cout<<"# Setting up potential"<<endl;
+    f.set_uBias(0.2/AU_eV);
     // f.addRectBarr(0.3/AU_eV, 300, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 700, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
     // f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
     // f.addGaussBarr(0.3/AU_eV, 500/AU_nm, 100/AU_nm);
-    //
 	// load_poisson_pot: loads potential from binary file to uStart variable
     // f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
     // f.set_uC(f.get_uStart());
 
+	// ------------------------------------------------
+    // Boundary conditions
+    // 0 -> 0 (closed system, no carrier inflow)
+	// 1 -> Supply function, 2:4 -> Supply function convolution
+	// -1 -> Gaussian, -2:-4 -> Gauss function convolution
+    // where convolution is with Lorentzian (2, -2), Gaussian (3, -3) or Voigt (4, -4) profile
+	// ------------------------------------------------
+    cout<<"# Setting up BC"<<endl;
+    f.setBoundCond();
+
     // --------------------------------------
     // Setting equilibrium function from file
 	// --------------------------------------
-	// if false Wigner/Boltzmann is solved for 0 bias and no dissipation
-    // f.setEquilibriumFunction("out/wf_feq_BP.bin", true);
+	// if no file is given, equilibrium function is calculated from boundary conditions
+    // f.setEquilibriumFunction("output/wf_feq_BP.bin");
 
     // Print system parameters
-    // f.printParam();
+    f.printParam();
 
     // ----------------------
     // Start calculation time
@@ -91,22 +88,16 @@ int main(){
     auto t_start = std::chrono::steady_clock::now();
 
     // ----------------------
-    // Boltzmann-Poisson test
+    // Wigner/Boltzmann test
 	// ----------------------
-    /*
     cout<<"## Solving BTE"<<endl;
     f.solveWignerEq();
-    f.calcCD_X();
-    f.set_doping_profile(0.02);
-    //
-    Poisson1D p(f.get_nx(), f.get_dx());
-    p.set_epsilonR(f.get_epsilonR()), p.set_temp(f.get_temp());  // Permittivity and temperature
-    p.set_boundary_conditions(u_bias/2., -u_bias/2.);  // Dirichlet BC
-    p.rho_ = f.get_nD() - f.get_cdX();
-    p.solve();
-    f.set_uC(p.uNew_);
+    arma::vec cdX = f.calcCD_X()/AU_cm3;
+    // cdX.print("Carrier density in x space:");
+    cout << "# Carrier density in x space: " << cdX(0) << " cm^-3 at x=0 and " << cdX(cdX.size()-1) << " cm^-3 at x=L" << endl;
+    cout << "# Carrier density norm: " << arma::norm(cdX, 2) << " cm^-3" << endl;
+    cout << "# Current density: " << f.calcCurrentDensity()*AU_A/AU_cm2 << " A/cm^2" << endl;
     cout<<"## BTE done"<<endl;
-    */
 
 	// --------------------------
     // Wave packet time evolution
@@ -145,18 +136,12 @@ int main(){
     f.saveWignerFun();
 	*/
 
-    // --------------------
-    // Schrödinger equation
-	// --------------------
-    // cout<<"# Solving Schrödinger equation"<<endl;
-    // f.solveSchrEq();
-
     // ----------------------------------------------------------------
-    // Printing and saving results to files located it "out" folder
+    // Printing and saving results to files located it "output" folder
     // ----------------------------------------------------------------
-    // f.saveWignerFun();
-    // f.saveTest();
-    // f.printResults();
+    f.saveWignerFun();
+    f.saveTest();
+    f.printResults();
 
     //
     // Evaluating calculation time

@@ -9,18 +9,11 @@ using namespace AtomicUnits;
  * @todo review armadillo options for sparse matrix solvers
  */
 void WignerFunction::solveWignerEq(){
-    // Boundary conditions
-    setBoundCond();
-
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
     d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
-    // readPotential();
-
-    // setBoundCond();
-    // setEquilibriumFunction();
 
     /// TODO: OpenMP parallel calculations
     #pragma omp parallel for collapse(2) shared(a_, b_)
@@ -75,7 +68,6 @@ void WignerFunction::solveTimeEv(){
     du_ = calcFirstDer(u_, dx_);
     d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
-    // readPotential();
 
     // #pragma omp parallel for collapse(2)
     for (size_t i=nx_; i--;) {
