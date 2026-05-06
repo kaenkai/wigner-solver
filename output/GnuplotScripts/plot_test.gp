@@ -4,7 +4,7 @@ set datafile separator ','
 set key autotitle columnhead
 set multiplot
 
-file = '../test.csv'
+file = 'test.csv'
 
 ##### Constants ######
 h = 6.626070040e-34
@@ -60,8 +60,7 @@ set xlabel ""
 # set logscale y
 set key over
 
-plot [:] [:] file u 1:2 w l ls 2 axes x1y2,\
-    '' u 1:3 w l ls 1
+plot file u 1:2 w l ls 1, '' u 1:3 w l ls 2 axes x1y2
 
 #
 ##### Plot 2 #####
@@ -79,9 +78,9 @@ set logscale y
 set key over
 
 x0 = 35; s = 20; U0 = 0.03
-plot [:] file u 1:($6) w l ls 2 axes x1y2,\
-    '' u 1:4 w l ls 1,\
-    '' u 1:5 w l ls 31
+plot file u 1:2 w l ls 1, '' u 1:4 w l ls 3 axes x1y2
+    # '' u 1:4 w l ls 1,\
+    # '' u 1:5 w l ls 31
     # '' u 1:7 w l ls 3 axes x1y2,\
     # '' u 1:5 w l ls 1
     # U0*exp(-(x-x0)*(x-x0)/s/s)*(-8./s/s/s/s/s/s*(x-x0)*(x-x0)*(x-x0)+12/s/s/s/s*(x-x0))

@@ -1,5 +1,5 @@
 #include "lib.hpp"
-#include "WignerFunction.hpp"
+#include "WignerSolver.hpp"
 
 using namespace AtomicUnits;
 
@@ -88,9 +88,9 @@ std::map<std::string, double> readParam(std::string filename){
 
 
 /**
- * Saves Wigner function to wf.dat, wf.bin, and wf.z (GLE format) files
+ * Saves Distribution function to wf.dat, wf.bin, and wf.z (GLE format) files
 */
-void WignerFunction::saveWignerFun() {
+void WignerSolver::saveDistFun() {
     std::ofstream wf_out("output/wf.dat");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
@@ -112,7 +112,7 @@ void WignerFunction::saveWignerFun() {
 
 
 // #################### Print parameters ####################
-void WignerFunction::printParam()
+void WignerSolver::printParam()
 {
     int cw_n = 25, cw_v = 25;
 
@@ -171,10 +171,6 @@ void WignerFunction::printParam()
     cout.width(cw_n); cout<<"# dt";
     cout.width(cw_v); cout<<dt_;
     cout.width(cw_v); cout<<dt_*AU_s<<'#'<<endl;
-	// ////////// Potential //////////
-    cout.width(cw_n); cout<<"# use NLP?";
-    cout.width(cw_v); cout<<(useNLP_ ? "true" : "false");
-    cout.width(cw_v); cout<<(useNLP_ ? "true" : "false")<<'#'<<endl;
 	// ////////// Dissipation //////////
     cout.width(cw_n); cout<<"# rR";
     cout.width(cw_v); cout<<rR_;
@@ -203,16 +199,6 @@ void WignerFunction::printParam()
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
     cout.width(cw_n); cout<<"# BC type";
     cout.width(cw_v); cout<<bcType_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	// ////////// Numerical schemes //////////
-    cout.width(cw_n); cout<<"# DS - diffusion";
-    cout.width(cw_v); cout<<diffSch_K_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# DS - drift";
-    cout.width(cw_v); cout<<diffSch_P_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# DS - curr. den.";
-    cout.width(cw_v); cout<<diffSch_J_;
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
 
     cout.fill('=');
@@ -257,52 +243,4 @@ void WignerFunction::printParam()
     cout<<'#'<<'#'<<endl;
     cout.fill(' ');
     cout<<endl;
-}
-
-
-void WignerFunction::saveTest() {
-    calcCD_X(), calcCD_K();
-    arma::vec rho = nD_ - cdX_;
-	//
-    arma::field<std::string> header(6);
-    arma::mat out_data;
-    out_data.insert_cols(0, x_*AU_nm), header(0) = "x [nm]"; // col. 1
-    out_data.insert_cols(1, u_*AU_eV), header(1) = "U [eV]";  // col. 2
-    out_data.insert_cols(2, currD_-arma::mean(currD_)), header(2) = "J(x)-[J(x)]";  // col. 3
-    out_data.insert_cols(3, cdX_/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
-    out_data.insert_cols(4, nD_/AU_cm3), header(4) = "n_D [cm^{-3}]";  // col. 5
-    out_data.insert_cols(5, rho/AU_cm3), header(5) = "rho [cm^{-3}]";  // col. 6
-	// out_data.insert_cols(6, f.get_du()*AU_eV/AU_nm), header(6) = "U' [eV/nm]";  // col. 7
-	// out_data.insert_cols(7, f.get_d3u()), header(7) = "U''' [au]";  // col. 8
-	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";  // col. 9
-	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";  // col. 10
-    out_data.save( arma::csv_name("output/test.csv", header) );
-
-    std::ofstream file;
-    file.open("output/cdX.dat", std::ios::out);
-    file<<"# Carrier density in 'x' space\n";
-    file<<"# x [au]  n(x) [au]\n";
-    for (size_t i=0; i<nx_; ++i)
-	    file<<x_(i)<<'\t'<<cdX_(i)<<'\n';
-    file.close();
-
-    file.open("output/cdK.dat", std::ios::out);
-    file<<"# Carrier density in 'k' space\n";
-    file<<"# p [au]  n(k) [au]\n";
-    for (size_t j=0; j<nk_; ++j)
-	    file<<k_(j)<<'\t'<<cdK_(j)<<'\n';
-    file.close();
-}
-
-
-void WignerFunction::printResults() {
-    double curr = calcCurrentDensity();
-    calcCD_X(), calcCD_K();
-	// cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;
-	// cout<<"Plasma frequency: "<<f.get_plFreq()/AU_s<<", 1/Plasma frequency: "<<1/f.get_plFreq()*AU_s<<endl;
-    cout<<"# Final current density: "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
-	// cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
-    cout<<"# Integral[dp](f_BC): "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3<<" cm^-3."<<endl;  // /2./M_PI
-    cout<<"# Given value: "<<ND<<" cm^-3."<<endl;
-	// cout<<"# Value from a function: "<<cdX_/AU_cm3<<" cm^-3."<<endl;
 }

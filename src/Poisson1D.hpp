@@ -49,7 +49,8 @@ class Poisson1D {
         double get_temp() {return temp_;};
         double get_dirichletL() {return dirichletL_;};
         double get_dirichletR() {return dirichletR_;};
-
+        arma::vec get_uNew() {return uNew_;};
+        arma::vec get_uOld() {return uOld_;};
 
         /*
         Poisson equasion tests

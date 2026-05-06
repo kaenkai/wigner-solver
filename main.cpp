@@ -1,8 +1,10 @@
 #include "src/lib.hpp"
-#include "src/WignerFunction.hpp"
+#include "src/WignerSolver.hpp"
 #include "src/Poisson1D.hpp"
 
+#include <armadillo>
 #include <chrono>
+#include <iostream>
 
 using namespace AtomicUnits;
 
@@ -18,8 +20,8 @@ int main(){
     // --------------------------------------------
     size_t nx = 200, nk = 200;
     double lD = 1000, lC = 0;
-    double k_max = 0.04;
-    WignerFunction f(nx, lD, lC, nk, k_max);    
+    double k_max = 0.1;
+    WignerSolver f(nx, lD, lC, nk, k_max);    
 
 	// ---------------------------------------
 	// System/simulation parameters
@@ -41,7 +43,6 @@ int main(){
     // -----------------------------------
     // f.set_dt(0.1E-15/AU_s);
     // f.set_useQC(false);      // Quantum correction term (third 'p' derivative)?
-    // f.set_useNLP(false);     // Calculations with non-local potential?
 
 	// -----------------
     // Dissipation terms
@@ -54,7 +55,12 @@ int main(){
 	// --------------------------------------
     cout<<"# Setting up potential"<<endl;
     f.set_uBias(0.2/AU_eV);
-    // f.addRectBarr(0.3/AU_eV, 300, 100, 10);
+    // Poisson1D p(f.get_nx(), f.get_dx());
+    // p.set_boundary_conditions(f.get_uL(), f.get_uR());
+    // p.set_epsilonR(EPS_GaAs);
+    // p.solve();
+    // f.set_uC(p.get_uNew());
+    f.addRectBarr(0.01/AU_eV, 400, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 700, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
     // f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
@@ -77,7 +83,7 @@ int main(){
     // Setting equilibrium function from file
 	// --------------------------------------
 	// if no file is given, equilibrium function is calculated from boundary conditions
-    // f.setEquilibriumFunction("output/wf_feq_BP.bin");
+    // f.setEquilibriumFunction(); --- IGNORE ---
 
     // Print system parameters
     f.printParam();
@@ -90,14 +96,26 @@ int main(){
     // ----------------------
     // Wigner/Boltzmann test
 	// ----------------------
-    cout<<"## Solving BTE"<<endl;
-    f.solveWignerEq();
-    arma::vec cdX = f.calcCD_X()/AU_cm3;
+    cout<<"# BTE test"<<endl;
+    cout<<"# Solving BTE"<<endl;
+    f.solveBTE();
+    arma::vec cdX = f.calcCD_X();
+    //
     // cdX.print("Carrier density in x space:");
     cout << "# Carrier density in x space: " << cdX(0) << " cm^-3 at x=0 and " << cdX(cdX.size()-1) << " cm^-3 at x=L" << endl;
     cout << "# Carrier density norm: " << arma::norm(cdX, 2) << " cm^-3" << endl;
     cout << "# Current density: " << f.calcCurrentDensity()*AU_A/AU_cm2 << " A/cm^2" << endl;
-    cout<<"## BTE done"<<endl;
+    //
+    arma::field<std::string> header(4);
+    arma::mat out_data;
+    out_data.insert_cols(0, arma::linspace(0, f.get_l(), f.get_nx())), header(0) = "x [au]";
+    out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";
+    out_data.insert_cols(2, f.get_currD()/arma::norm(f.get_currD())), header(2) = "J(x)/||J(x)||";
+    out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";
+	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";
+	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";
+    out_data.save( arma::csv_name("output/test.csv", header) );
+    f.saveDistFun();
 
 	// --------------------------
     // Wave packet time evolution
@@ -109,7 +127,7 @@ int main(){
     while (t <= t_total) {
         t += dt;
         f.solveTimeEv();
-        f.saveWignerFun();
+        f.saveDistFun();
         cout<<t*AU_s*1e15<<' '<<f.calcEK()<<' '<<sqrt(f.calcEK2())<<' '<<f.calcEX()*AU_nm<<endl;
     }
 	*/
@@ -124,24 +142,6 @@ int main(){
     // Poisson1D::testGrid();
     // Poisson1D::testChargedPlane();
     // Poisson1D::testSelfConsistency();
-
-    // -----------------
-    // Boltzmann-Poisson
-	// -----------------
-	/*
-    cout<<"# Solving B-P set of equations"<<endl;
-    (uBias, alpha, beta, n_max, timeDependent)
-    alpha - density mixing, beta - potential mixing
-    f.solveWignerPoisson(0.1/AU_eV, 1E-3, 1, 1, false);
-    f.saveWignerFun();
-	*/
-
-    // ----------------------------------------------------------------
-    // Printing and saving results to files located it "output" folder
-    // ----------------------------------------------------------------
-    f.saveWignerFun();
-    f.saveTest();
-    f.printResults();
 
     //
     // Evaluating calculation time

@@ -1,5 +1,5 @@
 #include "lib.hpp"
-#include "WignerFunction.hpp"
+#include "WignerSolver.hpp"
 
 using namespace AtomicUnits;
 
@@ -9,12 +9,13 @@ using namespace AtomicUnits;
  * if input_file is not empty: reads equilibrium from input_file
  * solves WTE for 0 V bias otherwise
  * @param input_file input file, empty string as default
+ * @deprecated this function is not used anymore, equilibrium function is calculated in solveBTE() for 0 V bias, and read from file otherwise
  */
-void WignerFunction::setEquilibriumFunction(std::string input_file = ""){
+void WignerSolver::setEquilibriumFunction(std::string input_file = ""){
     if (input_file.empty())  {
         double uBias = uBias_, rR = rR_;
         uBias_ = 0, rR_ = 0.;
-        solveWignerEq();
+        solveBTE();
         for (size_t i=0; i<nx_; ++i)
             for (size_t j=0; j<nk_; ++j)
                 fEq_(i,j) = f_(i,j);
@@ -38,7 +39,7 @@ void WignerFunction::setEquilibriumFunction(std::string input_file = ""){
  * @return current density
  * @see W. R. Frensley. Physical Review B, 36(3):1570–1580, 1987
  */ 
-double WignerFunction::calcCurrentDensity() {
+double WignerSolver::calcCurrentDensity() {
     currD_.zeros();
     double alpha = 2., beta = 1.;
     for (size_t i=1; i<nx_-2; ++i) {
@@ -60,7 +61,7 @@ double WignerFunction::calcCurrentDensity() {
     currD_(0) = currD_(1);
     currD_(nx_-2) = currD_(nx_-3);
     currD_(nx_-1) = currD_(nx_-2);
-    if (bcType_ > 0) currD_ *= dk_/m_/4./M_PI/(alpha+beta);
+    currD_ *= dk_/m_/4./M_PI/(alpha+beta);
     return sum(currD_)*dx_/l_;
 }
 
@@ -68,7 +69,7 @@ double WignerFunction::calcCurrentDensity() {
 /**
  * Calculates carrier density in x space
  */
-arma::vec WignerFunction::calcCD_X(){
+arma::vec WignerSolver::calcCD_X(){
     arma::vec cdX(nx_, arma::fill::zeros);
     for (size_t i=nx_; i--;) {
         for (size_t j=1; j<nk_/2; ++j)
@@ -86,7 +87,7 @@ arma::vec WignerFunction::calcCD_X(){
 /**
  * Calculates carrier density in k space
  */
-arma::vec WignerFunction::calcCD_K(){
+arma::vec WignerSolver::calcCD_K(){
     arma::vec cdK(nx_, arma::fill::zeros);
     for (size_t j=nk_; j--;) {
         for (size_t i=1; i<nx_/2; ++i)
@@ -103,7 +104,7 @@ arma::vec WignerFunction::calcCD_K(){
 /**
  * Calculates density function norm (integral over whole space)
  */
-double WignerFunction::calcNorm(){
+double WignerSolver::calcNorm(){
     double sum_x = 0;
     double sum_k = 0;
     for (size_t i=nx_; i--;) {
@@ -125,7 +126,7 @@ double WignerFunction::calcNorm(){
 /**
  * Expected value in x-space
  */
-double WignerFunction::calcEX(){
+double WignerSolver::calcEX(){
     double sum_x = 0;
     double sum_k = 0;
     for (size_t i=nx_; i--;) {
@@ -146,7 +147,7 @@ double WignerFunction::calcEX(){
 /**
  * Expected value in k-space
  */
-double WignerFunction::calcEK(){
+double WignerSolver::calcEK(){
     double sum_x = 0;
     double sum_k = 0;
     for (size_t i=nx_; i--;) {
@@ -168,7 +169,7 @@ double WignerFunction::calcEK(){
 /**
  * Expected value in k-space, squared
  */
-double WignerFunction::calcEK2(){
+double WignerSolver::calcEK2(){
     double sum_x = 0;
     double sum_k = 0;
     for (size_t i=nx_; i--;) {
@@ -189,7 +190,7 @@ double WignerFunction::calcEK2(){
 /**
  * Standard deviation in k-space
  */
-double WignerFunction::calcSDK(){
+double WignerSolver::calcSDK(){
     double ev = 0, ev2 = 0, s_ev, s_ev2;
     for (size_t i=nx_; i--;) {
         s_ev = 0, s_ev2 = 0;
@@ -217,7 +218,7 @@ double WignerFunction::calcSDK(){
 /**
  * Calculates standard deviation in x
  */
-double WignerFunction::calcSDX(){
+double WignerSolver::calcSDX(){
     double ev = 0, ev2 = 0, s_ev, s_ev2;
     for (size_t i=0; i<nx_; ++i) {
         s_ev = 0, s_ev2 = 0;
@@ -247,7 +248,7 @@ double WignerFunction::calcSDX(){
  * @param x0 position
  * @param sX width
  */
-void WignerFunction::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
+void WignerSolver::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
     for (size_t i=0; i<nx_; ++i)
         uB_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*u0;
 }
@@ -260,7 +261,7 @@ void WignerFunction::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, doubl
  * @param wB width
  * @param p rectangularity parameter
  */
-void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double wB = 100, double p = 10) {
+void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double wB = 100, double p = 10) {
     double sig = wB/2.;
     for (size_t i=0; i<nx_; ++i)
         uB_(i) += exp(-pow(x_(i)-x0, 2*p)/2./pow(sig, 2*p))*u0;
@@ -277,7 +278,7 @@ void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double
  * @param gwp_x0, gwp_k0 GWP position
  * @param gwp_dx, gwp_dk GWP size
  */
-void WignerFunction::addWavePacket(
+void WignerSolver::addWavePacket(
     double gwp_x0, double gwp_dx,
     double gwp_k0, double gwp_dk) {
     double A = cD_*lC_ / (gwp_dx*gwp_dk*2*M_PI);
@@ -301,7 +302,7 @@ void WignerFunction::addWavePacket(
 /** 
  * Analitical solution of wave packet time evolution (no potential)
  */
-double WignerFunction::wavePacket_TEV(
+double WignerSolver::wavePacket_TEV(
     double gwp_x0, double gwp_dx,
     double gwp_k0, double gwp_dk, 
     double x, double k) {
@@ -319,7 +320,7 @@ double WignerFunction::wavePacket_TEV(
  * Boundary conditions
  * @todo implement armadillo convolution and simplify
  */
-void WignerFunction::setBoundCond(){
+void WignerSolver::setBoundCond(){
     Gamma_ = rG_*.5;
     if (bcType_ == 0)
         bc_.zeros();
@@ -371,7 +372,7 @@ void WignerFunction::setBoundCond(){
  * @param k wave vector
  * @return supply function value
  */
-double WignerFunction::supplyFunction(double k){
+double WignerSolver::supplyFunction(double k){
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
@@ -387,7 +388,7 @@ double WignerFunction::supplyFunction(double k){
  * @param k wave vector
  * @return Gaussian value
  */
-double WignerFunction::gaussian(double k) {
+double WignerSolver::gaussian(double k) {
     return pow((2.*M_PI),-1/2.) * exp(-k*k/2.);
 }
 
@@ -399,7 +400,7 @@ double WignerFunction::gaussian(double k) {
  * @param energy energy at which supply function is calculated
  * @return supply function value
  */
-inline double WignerFunction::sf(double mu, double energy) {
+inline double WignerSolver::sf(double mu, double energy) {
     double m = m_;
     double c = m/M_PI*KB/AU_eV*temp_, ex = -(energy-mu)/(KB/AU_eV*temp_);     // [au]
     if (ex < 700)
@@ -419,7 +420,7 @@ inline double WignerFunction::sf(double mu, double energy) {
  * @todo review classical part of the function, decide on the form of the function
  * @see https://en.wikipedia.org/wiki/Maxwell-Boltzmann_distribution
  */
-double WignerFunction::eqFun(double mu, double energy) {
+double WignerSolver::eqFun(double mu, double energy) {
     double kBT = KB/AU_eV*temp_;
     return bcType_ > 0 ? sf(mu, energy) : pow(2.*M_PI*kBT/m_,-1/2.) * exp(-energy/kBT);
 }
@@ -430,7 +431,7 @@ double WignerFunction::eqFun(double mu, double energy) {
  * @param k wave vector at which convolution is calculated
  * @return Lorentzian and supply function convolution
  */
-double WignerFunction::lorentz(double k) {
+double WignerSolver::lorentz(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
@@ -465,7 +466,7 @@ double WignerFunction::lorentz(double k) {
  * @param k wave vector at which convolution is calculated
  * @return Gauss and supply function convolution
  */
-double WignerFunction::gauss(double k) {
+double WignerSolver::gauss(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
@@ -499,7 +500,7 @@ double WignerFunction::gauss(double k) {
  * @param k wave vector at which convolution is calculated
  * @return (pseudo-)Voigt profile and supply function convolution
  */
-double WignerFunction::voigt(double k) {
+double WignerSolver::voigt(double k) {
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
@@ -617,7 +618,7 @@ double calcFermiEn(double n0, double m, double T) {
  * to consider: camelCase -> snake_case, or vice versa, for all functions
  * @param k wave vector
  */
-double WignerFunction::fermiDirac(double k){
+double WignerSolver::fermiDirac(double k){
     double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
@@ -630,7 +631,7 @@ double WignerFunction::fermiDirac(double k){
  * @param k wave vector
  * @return Maxwell-Boltzmann distribution   value
  */
-double WignerFunction::maxwellBoltzmann(double k){
+double WignerSolver::maxwellBoltzmann(double k){
     return cD_*pow(2*M_PI*m_*KB/AU_eV*temp_, -3/2.) * 
            exp(-k*k/2/2./(KB/AU_eV*temp_));
 }

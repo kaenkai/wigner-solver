@@ -1,7 +1,8 @@
-#ifndef WIGNERFUNCTION_HPP
-#define WIGNERFUNCTION_HPP
+#ifndef WIGNERSOLVER_HPP
+#define WIGNERSOLVER_HPP
 
 #include "lib.hpp"
+#include <armadillo>
 
 using namespace AtomicUnits;
 
@@ -9,33 +10,30 @@ using namespace AtomicUnits;
 /**
  * Wigener function class
  */
-class WignerFunction{
+class WignerSolver{
 
-    size_t nx_;
-    double lD_, lC_;  // total lenght, devie len., contacts len.
-    double l_;
-    double dx_;  // x-space step size (lattice constant)
-    size_t nk_;
-    double kmax_;  // k-space range
-    double dk_;  // k-space step size (Brillouin zone / Nk)
+    size_t nx_;         // number of x-space grid points
+    double lD_, lC_;    // devie len., contacts len.
+    double l_;          // total length
+    double dx_;         // x-space step size (lattice constant)
+    size_t nk_;         // number of k-space grid points
+    double kmax_;       // k-space range
+    double dk_;         // k-space step size (Brillouin zone / Nk)
     size_t nk2_, nxk_;  // x/k-space nr of steps
 
     double dt_ = 0;  // time step size (1 fs)
 
-    double m_ = 1;
-    double temp_ = 300;                              // Contacts temperature [K]
-    double uR_ = 1, uL_ = 1;    // Fermi energy in right/left contact
-    double cD_ = 1;                       // dopant concentration in contacts [AU]
-    double epsilonR_ = 1;                        // relative permitivitty (for GaAs)
+    double m_ = 1;                                          // effective mass in the device
+    double temp_ = 300;                                     // contacts temperature [K]
+    double uR_ = 1, uL_ = 1;                                // Fermi energy in right/left contact
+    double cD_ = 1;                                         // dopant concentration in contacts [AU]
+    double epsilonR_ = 1;                                   // relative permitivitty (for GaAs)
 
     double uBias_ = 0;                                      // bias voltage [eV]
     double rR_ = 0, rM_ = 0, rG_ = 0, Gamma_ = 0, rF_ = 0;  // Scattering rate (1/tau)
     double lambda_ = 0;                                     // Localization rate
     int bcType_ = 1;                                        // boundary condition type, 1 -> Supply function
-
-    bool useNLP_, useQC_;  // bool variables
-    std::string diffSch_K_ = "UDS2", diffSch_P_ = "UDS2";
-    std::string diffSch_J_ = "UDS2";
+    bool useQC_;                                            // whether to use quantum correction term (third derivative of potential)
 
     arma::mat f_;       // Wigner function
     arma::mat fEq_;     // Equilibrium Wigner function
@@ -43,8 +41,8 @@ class WignerFunction{
     arma::mat fL_;      // Wigner function for el. from LEFT contact
     arma::mat fR_;      // Wigner function for el. from RIGHT contact
     arma::vec u_;       // Potential energy
-    arma::vec uC_;      // Hartree potential / bias potential
-    arma::vec uB_;      // Band offset
+    arma::vec uC_;      // Hartree potential
+    arma::vec uB_;      // Conduction band offset
     arma::vec du_;      // Potential derivative
     arma::vec d3u_;     // Potential third derivative
     arma::vec bc_;      // Boundary condition
@@ -64,7 +62,7 @@ class WignerFunction{
 public:
 
     // Default constructor
-    WignerFunction() :
+    WignerSolver() :
         nx_ (100),
         lD_ (60./AU_nm),
         lC_ (20./AU_nm),
@@ -74,7 +72,7 @@ public:
         kmax_ (M_PI/2./dx_),
         dk_ (2.*kmax_/float(nk_)),
         nk2_ (size_t(nk_/2.)),
-        nxk_ ((nx_)*nk_),
+        nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
         fEq_(arma::mat(nx_, nk_)),
         f0_(arma::mat(nx_, nk_)),
@@ -96,7 +94,7 @@ public:
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
-        cout<<"## Start: WignerFunction default constructor"<<endl;
+        cout<<"## Start: WignerSolver default constructor"<<endl;
         // ########## Configuration space array values ##########
         cout<<"# Setting up configuration space array values"<<endl;
         for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
@@ -110,10 +108,10 @@ public:
                 for (size_t g=0; g<nk_; g++)
                         for (size_t h=0; h<nk2_; h++)
                                 sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-        cout<<"## End: WignerFunction default constructor"<<endl;
+        cout<<"## End: WignerSolver default constructor"<<endl;
     }  // End of constructor
 
-    WignerFunction(size_t i_nx, double i_lD, double i_lC, size_t i_nk, double i_kmax) :
+    WignerSolver(size_t i_nx, double i_lD, double i_lC, size_t i_nk, double i_kmax) :
         nx_ (i_nx),
         lD_ (i_lD),
         lC_ (i_lC),
@@ -123,7 +121,7 @@ public:
         kmax_ (i_kmax > 0 ? i_kmax : M_PI/2./dx_),
         dk_ (2.*kmax_/float(nk_)),
         nk2_ (size_t(nk_/2.)),
-        nxk_ ((nx_)*nk_),
+        nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
         fEq_(arma::mat(nx_, nk_)),
         f0_(arma::mat(nx_, nk_)),
@@ -145,7 +143,7 @@ public:
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
-        cout<<"## Start: WignerFunction constructor"<<endl;
+        cout<<"## Start: WignerSolver constructor"<<endl;
         cout<<"# Setting up configuration space array values"<<endl;
         for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
         cout<<"# Setting up wave vector space array values"<<endl;
@@ -159,10 +157,10 @@ public:
                 for (size_t g=0; g<nk_; g++)
                         for (size_t h=0; h<nk2_; h++)
                                 sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-        cout<<"## End: WignerFunction constructor"<<endl;
+        cout<<"## End: WignerSolver constructor"<<endl;
     }  // End of constructor
 
-    ~WignerFunction(){}
+    ~WignerSolver(){}
 
     size_t get_nx() { return nx_; }
     size_t get_nk() { return nk_; }
@@ -193,6 +191,7 @@ public:
     arma::vec get_nD() { return nD_; }
     arma::vec get_bc() { return bc_; }
     arma::mat get_wf() { return f_; }
+    arma::vec get_currD() { return currD_; }
 
     void set_m(double m) { m_ = m; }
     void set_temp(double temp) { temp_ = temp; }
@@ -208,7 +207,6 @@ public:
     void set_rG(double rG) { rG_ = rG; }
     void set_lambda(double lambda) { lambda_ = lambda; }
     void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
-    void set_useNLP(bool useNLP) { useNLP_ = useNLP; }
     void set_useQC(bool useQC) { useQC_ = useQC; }
     void set_bcType(int bcType) { bcType_ = bcType; }
 
@@ -245,13 +243,11 @@ public:
     arma::vec calcCD_K();
 
     void printParam();
-    void saveWignerFun();
-    void saveTest();
-    void printResults();
+    void saveDistFun();
 
-    void solveWignerEq();
+    void solveBTE();
+    void solveWTE();
     void solveTimeEv();
-    void solveWignerPoisson(double, double, double, size_t, bool);
     void solveSchrEq();
 
     void setBoundCond();                        // Boundary conditions
@@ -259,6 +255,7 @@ public:
 
     void diffusionTerm(size_t, size_t, double);
     void driftTerm(size_t, size_t, double);
+    void nonLocalPotentialTerm(size_t, size_t);
     void scatteringTerm(size_t, size_t, double);
     void quantumCorrTerm(size_t, size_t, double);
 
