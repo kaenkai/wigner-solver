@@ -2,6 +2,7 @@
 # Author: KK
 
 CXXFLAGS = -std=c++20 -g -O2\
+	-Isrc\
 	-fopenmp -Wpedantic -Wall -Wextra -Werror\
 	-Wdisabled-optimization\
 	-Wlogical-op\
@@ -17,7 +18,8 @@ OBJS = src/WignerSolver.o \
 	src/WignerIO.o \
 	src/WignerTools.o \
 	src/Poisson1D.o \
-	src/TestPoisson1D.o \
+	src/test/TestPoisson1D.o \
+	src/test/TestWignerSolver.o \
 	main.o
 LDLIBS = -larmadillo -lsuperlu -lopenblas -lm -fopenmp
 #-lblas <-> -lopenblas
@@ -25,8 +27,8 @@ LDLIBS = -larmadillo -lsuperlu -lopenblas -lm -fopenmp
 #-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
 # -lm -- math library
 
-run.out: $(OBJS)
+run: $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -f $(OBJS) run.out
+	rm -f $(OBJS) run

@@ -185,9 +185,6 @@ void WignerSolver::printParam()
     cout.width(cw_v); cout<<rG_;
     cout.width(cw_v); cout<<rG_/AU_s<<'#'<<endl;
 	// ////////// Boundary condition //////////
-    cout.width(cw_n); cout<<"# cD";
-    cout.width(cw_v); cout<<cD_;
-    cout.width(cw_v); cout<<cD_/AU_cm3<<'#'<<endl;
     cout.width(cw_n); cout<<"# fermi_energy (left)";
     cout.width(cw_v); cout<<uL_;
     cout.width(cw_v); cout<<uL_*AU_eV<<'#'<<endl;

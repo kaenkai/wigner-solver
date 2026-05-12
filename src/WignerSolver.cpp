@@ -139,82 +139,105 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
     // Fills Boltzmann equation matrix with diffusion term
     size_t r = i*nk_ + j;
     double k = k_(j), bc = bc_(j);
-    double alpha = 2., beta = 1.;
-    double C = k/m_/dx_/2.;
-    double D = C/(alpha+beta);
-    double B = bc*D;
-    if (dt > 0) C *= dt/2., D *= dt/2., B *= dt;
+    double C = k/m_/dx_;
+    double B = bc*C;
+    if (dt > 0) C *= dt/2., B *= dt;
     if (k<0.) {
-        if (i==0) {  // UDS2 is used at outgoing boundary
-            // b_(r) += B*alpha;
-            // a_(r, r) += -3.*beta*D;
-            // a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-            // a_(r, (i+2)*nk_ + j) += -beta*D;
-            a_(r, r) += -3.*C;
-            a_(r, (i+1)*nk_ + j) += 4.*C;
-            a_(r, (i+2)*nk_ + j) += -C;
-        }
-        else if (i==nx_-1) {
-            a_(r, (i-1)*nk_ + j) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            b_(r) += -B*(alpha+3.*beta);
-            // a_(r, r) += -3.*C;
-            // b_(r) += -3.*B;
-        }
-        else if (i==nx_-2) {
-            a_(r, (i-1)*nk_ + j) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-            b_(r) += B*beta;
-            // a_(r, r) += -3.*C;
-            // a_(r, (i+1)*nk_ + j) += 4.*C;
-            // b_(r) += B;
+        if (i==nx_-1) {
+            a_(r, r) += -C;
+            b_(r) += -B;
         }
         else {
-            a_(r, (i-1)*nk_ + j) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-            a_(r, (i+2)*nk_ + j) += -beta*D;
+            a_(r, r) += -C;
+            a_(r, (i+1)*nk_+j) += C;
         }
     }
     if (k>0.) {
-        if (i==nx_-1) {  // UDS2 is used at outgoing boundary
-            // b_(r) += -alpha*B;
-            // a_(r, r) += 3.*beta*D;
-            // a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-            // a_(r, (i-2)*nk_ + j) += beta*D;
-            a_(r, r) += 3.*C;
-            a_(r, (i-1)*nk_ + j) += -4.*C;
-            a_(r, (i-2)*nk_ + j) += C;
-        }
-        else if (i==0) {
-            a_(r, (i+1)*nk_ + j) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            b_(r) += (alpha+3.*beta)*B;
-            // a_(r, r) += 3.*C;
-            // b_(r) += 3.*B;
-        }
-        else if (i==1) {
-            a_(r, (i+1)*nk_ + j) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-            b_(r) += -beta*B;
-            // a_(r, r) += 3.*C;
-            // a_(r, (i-1)*nk_ + j) += -4.*C;
-            // b_(r) += -B;
+        if (i==0) {
+            a_(r, r) += C;
+            b_(r) += B;
         }
         else {
-            a_(r, (i+1)*nk_ + j) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-            a_(r, (i-2)*nk_ + j) += beta*D;
+            a_(r, r) += C;
+            a_(r, (i-1)*nk_+j) += -C;
         }
     }
+    // double alpha = 2., beta = 1.;
+    // double C = k/m_/dx_/2.;
+    // double D = C/(alpha+beta);
+    // double B = bc*D;
+    // if (dt > 0) C *= dt/2., D *= dt/2., B *= dt;
+    // if (k<0.) {
+    //     if (i==0) {  // UDS2 is used at outgoing boundary
+    //         // b_(r) += B*alpha;
+    //         // a_(r, r) += -3.*beta*D;
+    //         // a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
+    //         // a_(r, (i+2)*nk_ + j) += -beta*D;
+    //         a_(r, r) += -3.*C;
+    //         a_(r, (i+1)*nk_ + j) += 4.*C;
+    //         a_(r, (i+2)*nk_ + j) += -C;
+    //     }
+    //     else if (i==nx_-1) {
+    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
+    //         a_(r, r) += -3.*beta*D;
+    //         b_(r) += -B*(alpha+3.*beta);
+    //         // a_(r, r) += -3.*C;
+    //         // b_(r) += -3.*B;
+    //     }
+    //     else if (i==nx_-2) {
+    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
+    //         a_(r, r) += -3.*beta*D;
+    //         a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
+    //         b_(r) += B*beta;
+    //         // a_(r, r) += -3.*C;
+    //         // a_(r, (i+1)*nk_ + j) += 4.*C;
+    //         // b_(r) += B;
+    //     }
+    //     else {
+    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
+    //         a_(r, r) += -3.*beta*D;
+    //         a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
+    //         a_(r, (i+2)*nk_ + j) += -beta*D;
+    //     }
+    // }
+    // if (k>0.) {
+    //     if (i==nx_-1) {  // UDS2 is used at outgoing boundary
+    //         // b_(r) += -alpha*B;
+    //         // a_(r, r) += 3.*beta*D;
+    //         // a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
+    //         // a_(r, (i-2)*nk_ + j) += beta*D;
+    //         a_(r, r) += 3.*C;
+    //         a_(r, (i-1)*nk_ + j) += -4.*C;
+    //         a_(r, (i-2)*nk_ + j) += C;
+    //     }
+    //     else if (i==0) {
+    //         a_(r, (i+1)*nk_ + j) += alpha*D;
+    //         a_(r, r) += 3.*beta*D;
+    //         b_(r) += (alpha+3.*beta)*B;
+    //         // a_(r, r) += 3.*C;
+    //         // b_(r) += 3.*B;
+    //     }
+    //     else if (i==1) {
+    //         a_(r, (i+1)*nk_ + j) += alpha*D;
+    //         a_(r, r) += 3.*beta*D;
+    //         a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
+    //         b_(r) += -beta*B;
+    //         // a_(r, r) += 3.*C;
+    //         // a_(r, (i-1)*nk_ + j) += -4.*C;
+    //         // b_(r) += -B;
+    //     }
+    //     else {
+    //         a_(r, (i+1)*nk_ + j) += alpha*D;
+    //         a_(r, r) += 3.*beta*D;
+    //         a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
+    //         a_(r, (i-2)*nk_ + j) += beta*D;
+    //     }
+    // }
 }
 
 
 /** 
- * Drift term, fills Boltzmann equation matrix with drift terms, hybrid HDS22 rule is used
+ * Drift term, fills Boltzmann equation matrix with drift terms, central CD1 scheme is used
  * @param i, j grid point indices
  * @param dt time step, if dt <= 0 the term is stationary, otherwise time dependent
  * @todo review implementation of HDS22 scheme, check if implemented correctly and if it is stable for time dependent calculations
@@ -222,60 +245,25 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
  */
 void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
-    // HDS22
     double F = -du_(i);
     double C = F/dk_/2.;
     if (dt > 0) C *= dt/2.;
-    double alpha = 2., beta = 1.;
-    double D = C/(alpha+beta);
     if (F <= 0) {
-        if (j==0) {
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            a_(r, r+2) += -beta*D;
-            b_(r) += fermiDirac(kmax_)*alpha*D;
+        if (j == nk_-1) {
+            a_(r, r) += -C;
         }
-        else if (j==nk_-1) {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            b_(r) += -fermiDirac(kmax_)*(alpha+3.*beta)*D;
-        }
-        else if (j==nk_-2) {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            b_(r) += fermiDirac(kmax_)*beta*D;
-        }
-        else {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            a_(r, r+2) += -beta*D;
+        else{
+            a_(r, r) += -C;
+            a_(r, r+1) += C;
         }
     }
     else if (F > 0) {
-        if (j==nk_-1) {
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            a_(r, r-2) += beta*D;
-            b_(r) += -fermiDirac(-kmax_)*alpha*D;
-        }
-        else if (j==0) {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            b_(r) += fermiDirac(-kmax_)*(alpha+3.*beta)*D;
-        }
-        else if (j==1) {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            b_(r) += -fermiDirac(-kmax_)*beta*D;
+        if (j == 0) {
+            a_(r, r) += C;
         }
         else {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            a_(r, r-2) += beta*D;
+            a_(r, r) += C;
+            a_(r, r-1) += -C;
         }
     }
 }

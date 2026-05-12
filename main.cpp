@@ -1,6 +1,6 @@
-#include "src/lib.hpp"
-#include "src/WignerSolver.hpp"
-#include "src/Poisson1D.hpp"
+#include "lib.hpp"
+#include "WignerSolver.hpp"
+#include "Poisson1D.hpp"
 
 #include <armadillo>
 #include <chrono>
@@ -15,28 +15,29 @@ using namespace AtomicUnits;
  */
 int main(){
 
-    // --------------------------------------------
-    // Set up Wigner function and system parameters
-    // --------------------------------------------
-    size_t nx = 200, nk = 200;
-    double lD = 1000, lC = 0;
-    double k_max = 0.1;
-    WignerSolver f(nx, lD, lC, nk, k_max);    
+    // -------------------------------------------------------------
+    // Set up grid, Wigner/Boltzmann equation, and system parameters
+    // -------------------------------------------------------------
+    // size_t nx = 200, nk = 200;
+    // double lD = 1000, lC = 0;
+    // double k_max = 0.1;
+    // WignerSolver f(nx, lD, lC, nk, k_max);    
 
 	// ---------------------------------------
 	// System/simulation parameters
     // Constants are given in src/lib.hpp file
 	// ---------------------------------------
-    f.set_m(M_GaAs);
-    f.set_temp(TEMP);
-    f.set_epsilonR(EPS_GaAs);
-    f.set_cD(ND*AU_cm3); // Carrier density in [AU]
+    // f.set_m(M_GaAs);
+    // f.set_temp(TEMP);
+    // f.set_epsilonR(EPS_GaAs);
 
     // ---------------------------------
 	// Fermi level in left/right contact
     // ---------------------------------
-    f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
-    f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+    // f.set_uL( calcFermiEn(ND*AU_cm3, f.get_m(), f.get_temp()) );
+    // f.set_uR( calcFermiEn(ND*AU_cm3, f.get_m(), f.get_temp()) );
+    // f.set_uL(0.1/AU_eV);
+    // f.set_uR(0.1/AU_eV);
 
     // -----------------------------------
 	// Miscellaneous simulation parameters
@@ -53,14 +54,14 @@ int main(){
     // --------------------------------------
     // Setting up potential bias and barriers
 	// --------------------------------------
-    cout<<"# Setting up potential"<<endl;
-    f.set_uBias(0.2/AU_eV);
+    // cout<<"# Setting up potential"<<endl;
+    // f.set_uBias(0.2/AU_eV);
     // Poisson1D p(f.get_nx(), f.get_dx());
     // p.set_boundary_conditions(f.get_uL(), f.get_uR());
     // p.set_epsilonR(EPS_GaAs);
     // p.solve();
     // f.set_uC(p.get_uNew());
-    f.addRectBarr(0.01/AU_eV, 400, 100, 10);
+    // f.addRectBarr(0.1/AU_eV, 400, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 700, 100, 10);
     // f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
     // f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
@@ -76,8 +77,8 @@ int main(){
 	// -1 -> Gaussian, -2:-4 -> Gauss function convolution
     // where convolution is with Lorentzian (2, -2), Gaussian (3, -3) or Voigt (4, -4) profile
 	// ------------------------------------------------
-    cout<<"# Setting up BC"<<endl;
-    f.setBoundCond();
+    // cout<<"# Setting up BC"<<endl;
+    // f.setBoundCond();
 
     // --------------------------------------
     // Setting equilibrium function from file
@@ -86,7 +87,7 @@ int main(){
     // f.setEquilibriumFunction(); --- IGNORE ---
 
     // Print system parameters
-    f.printParam();
+    // f.printParam();
 
     // ----------------------
     // Start calculation time
@@ -96,29 +97,12 @@ int main(){
     // ----------------------
     // Wigner/Boltzmann test
 	// ----------------------
-    cout<<"# BTE test"<<endl;
-    cout<<"# Solving BTE"<<endl;
-    f.solveBTE();
-    arma::vec cdX = f.calcCD_X();
-    //
-    // cdX.print("Carrier density in x space:");
-    cout << "# Carrier density in x space: " << cdX(0) << " cm^-3 at x=0 and " << cdX(cdX.size()-1) << " cm^-3 at x=L" << endl;
-    cout << "# Carrier density norm: " << arma::norm(cdX, 2) << " cm^-3" << endl;
-    cout << "# Current density: " << f.calcCurrentDensity()*AU_A/AU_cm2 << " A/cm^2" << endl;
-    //
-    arma::field<std::string> header(4);
-    arma::mat out_data;
-    out_data.insert_cols(0, arma::linspace(0, f.get_l(), f.get_nx())), header(0) = "x [au]";
-    out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";
-    out_data.insert_cols(2, f.get_currD()/arma::norm(f.get_currD())), header(2) = "J(x)/||J(x)||";
-    out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";
-	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";
-	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";
-    out_data.save( arma::csv_name("output/test.csv", header) );
-    f.saveDistFun();
+
+    WignerSolver::testBTE();
 
 	// --------------------------
     // Wave packet time evolution
+    // move to a test function
 	// --------------------------
 	/*
     f.addWavePacket(500/AU_nm, 100/AU_nm, 0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())

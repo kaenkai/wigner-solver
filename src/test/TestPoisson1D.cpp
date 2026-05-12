@@ -1,7 +1,5 @@
 #include "lib.hpp"
 #include "Poisson1D.hpp"
-#include <armadillo>
-#include <iostream>
 
 using namespace AtomicUnits;
 

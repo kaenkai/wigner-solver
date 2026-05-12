@@ -164,7 +164,7 @@ class matrix {
 
 
 /**
- * Integral (trapezoid)
+ * Calculate integral with step h using trapezoidal rule
  * @param f (arma::vec) function
  * @param h (T) integration step
  * @return double integral
@@ -239,16 +239,16 @@ arma::vec calcThirdDer(arma::vec f, T h){
 }
 
 /** 
- * @brief Calculates gaussian distribution centered at (x_min + x_max) / 2
+ * @brief Calculates normal distribution centered at (x_min + x_max) / 2
  * @param x_min Minimum value of x
  * @param x_max Maximum value of x
  * @param sig   Standard deviation
  * @param n     Number of points
  * @param A     Amplitude
- * @return arma::vec Gaussian distribution
+ * @return arma::vec normal distribution
 */
 template <class T>
-arma::vec gaussian_dist(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t n = 100){
+arma::vec normalDistribution(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t n = 100){
     arma::vec gauss(n, arma::fill::zeros);
     double x = 0;
     double mu = (x_min + x_max)*0.5;

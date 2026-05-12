@@ -46,9 +46,6 @@ unset key
 set size 1,1.1
 set origin 0,-0.04
 
-AU_nm = 0.0529
-AU_cm2 = 2.8e-17
-
 # set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
 # set label "{/Symbol t} = {/Symbol t}_M" at graph 0.1,0.85 textcolor "white" front
 

@@ -26,7 +26,6 @@ class WignerSolver{
     double m_ = 1;                                          // effective mass in the device
     double temp_ = 300;                                     // contacts temperature [K]
     double uR_ = 1, uL_ = 1;                                // Fermi energy in right/left contact
-    double cD_ = 1;                                         // dopant concentration in contacts [AU]
     double epsilonR_ = 1;                                   // relative permitivitty (for GaAs)
 
     double uBias_ = 0;                                      // bias voltage [eV]
@@ -49,8 +48,6 @@ class WignerSolver{
     arma::vec x_;       // Position values
     arma::vec k_;       // Wave vector values
     arma::mat sin_;     // Sine function values
-    arma::vec cdX_;     // Carrier density in x / k
-    arma::vec cdK_;
     arma::vec nD_;      // Doping profile
     arma::vec currD_;   // Current density
 
@@ -87,8 +84,6 @@ public:
         x_(arma::vec(nx_, arma::fill::zeros)),
         k_(arma::vec(nk_, arma::fill::zeros)),
         sin_(arma::mat(nk_,nk_*nk2_)),
-        cdX_(arma::vec(nx_, arma::fill::zeros)),
-        cdK_(arma::vec(nk_, arma::fill::zeros)),
         nD_(arma::vec(nx_, arma::fill::zeros)),
         currD_(arma::vec(nx_, arma::fill::zeros)),
         a_(arma::sp_mat(nxk_, nxk_)),
@@ -136,8 +131,6 @@ public:
         x_(arma::vec(nx_, arma::fill::zeros)),
         k_(arma::vec(nk_, arma::fill::zeros)),
         sin_(arma::mat(nk_,nk_*nk2_)),
-        cdX_(arma::vec(nx_, arma::fill::zeros)),
-        cdK_(arma::vec(nk_, arma::fill::zeros)),
         nD_(arma::vec(nx_, arma::fill::zeros)),
         currD_(arma::vec(nx_, arma::fill::zeros)),
         a_(arma::sp_mat(nxk_, nxk_)),
@@ -172,7 +165,6 @@ public:
     double get_m() { return m_; }
     double get_temp() { return temp_; }
     double get_epsilonR() { return epsilonR_; }
-    double get_cD() { return cD_; }
     double get_uL() { return uL_; }
     double get_uR() { return uR_; }
     double get_dt(){ return dt_; }
@@ -195,7 +187,6 @@ public:
 
     void set_m(double m) { m_ = m; }
     void set_temp(double temp) { temp_ = temp; }
-    void set_cD(double cD) { cD_ = cD; }
 
     void set_dt(double dt) {
         dt_ = dt;
@@ -225,11 +216,12 @@ public:
 
     /** 
      * Sets up doping profile
+     * @param nD - doping concentration in contacts [cm^-3]
      * @param s - smoothing parameter (0 - rectangular profile)
     */
-    void set_doping_profile(double s = 0.01){
+    void set_doping_profile(double nD, double s = 0.01){
         for (size_t i=0; i<nx_; ++i)
-            nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+            nD_(i) = nD*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
     }
 
     double calcCurrentDensity();  // Current density
@@ -263,7 +255,7 @@ public:
     double supplyFunction(double);  // Supply function as function of wave vector
     double sf(double, double);      // Supply function as function of energy (used for convolution with Lorentz/Gauss/Voigt profiles)
 
-    double maxwellBoltzmann(double);
+    double maxwellBoltzmann(double, double);
     double gaussian(double);
 
     double eqFun(double, double);
@@ -276,11 +268,16 @@ public:
     // ----------------------------
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);
-    void addWavePacket(double, double, double, double);
+    void addWavePacket(double, double, double, double, int);
     double wavePacket_TEV(double, double, double, double, double, double);
     double nC(double, double);
     double fermiInt(double, double);
     double calcFermiEn(double, double, double);
+
+    // --------------
+    // Test functions
+    // --------------
+    static void testBTE();
 };
 
 #endif

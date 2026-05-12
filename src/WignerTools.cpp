@@ -41,51 +41,65 @@ void WignerSolver::setEquilibriumFunction(std::string input_file = ""){
  */ 
 double WignerSolver::calcCurrentDensity() {
     currD_.zeros();
-    double alpha = 2., beta = 1.;
-    for (size_t i=1; i<nx_-2; ++i) {
+    // double alpha = 2., beta = 1.;
+    // for (size_t i=1; i<nx_-2; ++i) {
+    //     for (size_t j=0; j<nk2_; ++j)  // k < 0
+    //         currD_(i) += 
+    //             k_(j)*(
+    //                 alpha*f_(i,j) +
+    //                 (alpha+3*beta)*f_(i+1,j) -
+    //                 beta*f_(i+2,j)
+    //             );
+    //     for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+    //         currD_(i) += 
+    //             k_(j)*(
+    //                 alpha*f_(i+1,j) +
+    //                 (alpha+3*beta)*f_(i,j) -
+    //                 beta*f_(i-1,j)
+    //             );
+    // }
+    // currD_(0) = currD_(1);
+    // currD_(nx_-2) = currD_(nx_-3);
+    // currD_(nx_-1) = currD_(nx_-2);
+    // currD_ *= dk_/m_/4./M_PI/(alpha+beta);
+    for (size_t i=0; i<nx_-1; ++i) {
         for (size_t j=0; j<nk2_; ++j)  // k < 0
-            currD_(i) += 
-                k_(j)*(
-                    alpha*f_(i,j) +
-                    (alpha+3*beta)*f_(i+1,j) -
-                    beta*f_(i+2,j)
-                );
+            currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
         for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-            currD_(i) += 
-                k_(j)*(
-                    alpha*f_(i+1,j) +
-                    (alpha+3*beta)*f_(i,j) -
-                    beta*f_(i-1,j)
-                );
+            currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
     }
-    currD_(0) = currD_(1);
-    currD_(nx_-2) = currD_(nx_-3);
     currD_(nx_-1) = currD_(nx_-2);
-    currD_ *= dk_/m_/4./M_PI/(alpha+beta);
+    currD_ *= dk_/m_/2./M_PI;
     return sum(currD_)*dx_/l_;
 }
 
 
 /**
- * Calculates carrier density in x space
+ * Calculates carrier density in x-space
+ * @return carrier density in x-space
  */
 arma::vec WignerSolver::calcCD_X(){
     arma::vec cdX(nx_, arma::fill::zeros);
     for (size_t i=nx_; i--;) {
         for (size_t j=1; j<nk_/2; ++j)
+            // cdX(i) += (
+            //     f_(i,2*j-2) +
+            //     4*f_(i,2*j-1) +
+            //     f_(i,2*j)
+            // )*dk_/3.;
             cdX(i) += (
-                f_(i,2*j-2) +
-                4*f_(i,2*j-1) +
-                f_(i,2*j)
-            )*dk_/3.;
+                f_(i,j-1) +
+                f_(i,j)
+            )*dk_/2.;
     }
-    cdX /= 2.*M_PI;
+    cdX /= (2.*M_PI);
     return cdX;
 }
 
 
 /**
- * Calculates carrier density in k space
+ * Calculates carrier density in k-space
+ * @return carrier density in k-space
  */
 arma::vec WignerSolver::calcCD_K(){
     arma::vec cdK(nx_, arma::fill::zeros);
@@ -277,18 +291,20 @@ void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double w
  * Gaussian wave packet initial conditions
  * @param gwp_x0, gwp_k0 GWP position
  * @param gwp_dx, gwp_dk GWP size
+ * @param N number of electrons in GWP
  */
 void WignerSolver::addWavePacket(
     double gwp_x0, double gwp_dx,
-    double gwp_k0, double gwp_dk) {
-    double A = cD_*lC_ / (gwp_dx*gwp_dk*2*M_PI);
+    double gwp_k0, double gwp_dk,
+    int N) {
+    double A = N / (gwp_dx*gwp_dk*2*M_PI);
     cout<<"# Setting up GWP with parameters:\n"
     <<"# gwp_x0 = "<<gwp_x0*AU_nm<<" nm, "<<gwp_x0<<" a.u.\n"
     <<"# gwp_dx = "<<gwp_dx*AU_nm<<" nm, "<<gwp_dx<<" a.u.\n"
     <<"# gwp_p0 = "<<gwp_k0<<" a.u.\n"
     <<"# gwp_dp = "<<gwp_dk<<" a.u.\n"
     <<"# gwp_A = "<<A/AU_cm2<<" cm^-2, "<<A<<" a.u.\n"
-    <<"# cD_*lC_ = "<<cD_*lC_/AU_cm2<<" cm^-2\n"<<endl;
+    <<"# N = "<<N<<" electrons\n"<<endl;
     double sx = 2*gwp_dx*gwp_dx, sk = 2*gwp_dk*gwp_dk;
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j)
@@ -628,11 +644,12 @@ double WignerSolver::fermiDirac(double k){
 
 /** 
  * Maxwell-Boltzmann distribution
+ * @param nE electron density
  * @param k wave vector
  * @return Maxwell-Boltzmann distribution   value
  */
-double WignerSolver::maxwellBoltzmann(double k){
-    return cD_*pow(2*M_PI*m_*KB/AU_eV*temp_, -3/2.) * 
+double WignerSolver::maxwellBoltzmann(double nE,double k){
+    return nE*pow(2*M_PI*m_*KB/AU_eV*temp_, -3/2.) * 
            exp(-k*k/2/2./(KB/AU_eV*temp_));
 }
 
