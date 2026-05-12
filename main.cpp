@@ -2,9 +2,7 @@
 #include "WignerSolver.hpp"
 #include "Poisson1D.hpp"
 
-#include <armadillo>
 #include <chrono>
-#include <iostream>
 
 using namespace AtomicUnits;
 
@@ -94,11 +92,15 @@ int main(){
     // ----------------------
     auto t_start = std::chrono::steady_clock::now();
 
+    // ---------------------------
+    // Derivatives/integrals tests
+    // ---------------------------
+    testDerivatives();
+
     // ----------------------
     // Wigner/Boltzmann test
 	// ----------------------
-
-    WignerSolver::testBTE();
+    // WignerSolver::testBTE();
 
 	// --------------------------
     // Wave packet time evolution

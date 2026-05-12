@@ -165,10 +165,10 @@ class matrix {
 
 /**
  * Calculate integral with step h using trapezoidal rule
- * @param f (arma::vec) function
- * @param h (T) integration step
- * @return double integral
-*/
+ * @param f function
+ * @param h (integration step
+ * @return integral
+ */
 template <class T>
 double calcInt(arma::vec f, T h){
     size_t n = f.size();
@@ -181,32 +181,29 @@ double calcInt(arma::vec f, T h){
 
 
 /**
- * First derivative (hybrid scheme)
- * @param f (arma::vec) function
- * @param h (T) differentiation step
- * @return arma::vec first derivative
+ * First derivative, second order accuracy 
+ * @param f function
+ * @param h differentiation step
+ * @return first derivative
  */
  template <class T>
  arma::vec calcFirstDer(arma::vec f, T h){
-    /// TODO: verify derivative scheme
     size_t n = f.size();
     arma::vec df(n, arma::fill::zeros);
-    for (size_t i=2; i<n-2; ++i)
-        df(i) = (1/12.*f(i-2)-2/3.*f(i-1)+2/3.*f(i+1)-1/12.*f(i+2))/h;
-    df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
-    df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
-    df(1) = (-f(0)+f(2))/h/2.;
-    df(n-2) = (-f(n-3)+f(n-1))/h/2.;
+    for (size_t i=1; i<n-1; ++i)
+        df(i) = (-f(i-1)+f(i+1))/2./h;
+    df(0) = (-f(0)+f(1))/h;
+    df(n-1) = (f(n-1)-f(n-2))/h;
     return df;
 }
 
 
 /**
- * Second derivative (hybrid scheme)
- * @param f (arma::vec) function
- * @param h (T) differentiation step
- * @return arma::vec second derivative
-*/
+ * Second derivative, second order accuracy 
+ * @param f function
+ * @param h differentiation step
+ * @return second derivative
+ */
 template <class T>
 arma::vec calcSecondDer(arma::vec f, T h){
     size_t n = f.size();
@@ -220,23 +217,24 @@ arma::vec calcSecondDer(arma::vec f, T h){
 
 
 /**
- * Third derivative (hybrid scheme)
- * @param f (arma::vec) function
- * @param h (T) differentiation step
- * @return arma::vec third derivative
-*/
+ * Third derivative, second order accuracy
+ * @param f function
+ * @param h differentiation step
+ * @return derivative
+ */
 template <class T>
 arma::vec calcThirdDer(arma::vec f, T h){
     size_t n = f.size();
     arma::vec df(n, arma::fill::zeros);
     for (size_t i=2; i<n-2; ++i)
-        df(i) = (-f(i-2)/2.+f(i-1)-f(i+1)+f(i+2)/2.)/h/h/h;
+        df(i) = (-f(i-2)+2*f(i-1)-2*f(i+1)+f(i+2))/2./h/h/h;
     df(0) = (-f(0)+3.*f(1)-3*f(2)+f(3))/h/h/h;
     df(1) = (-f(1)+3.*f(2)-3*f(3)+f(4))/h/h/h;
     df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
     df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
     return df;
 }
+
 
 /** 
  * @brief Calculates normal distribution centered at (x_min + x_max) / 2
@@ -246,7 +244,7 @@ arma::vec calcThirdDer(arma::vec f, T h){
  * @param n     Number of points
  * @param A     Amplitude
  * @return arma::vec normal distribution
-*/
+ */
 template <class T>
 arma::vec normalDistribution(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t n = 100){
     arma::vec gauss(n, arma::fill::zeros);
@@ -259,8 +257,16 @@ arma::vec normalDistribution(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., s
     return gauss;
 }
 
+
 double calcFermiEn(double, double, double);
 std::map<std::string, double> readParam(std::string);
+
+
+// -----
+// Tests
+// -----
+
+void testDerivatives();
 
 
 #endif

@@ -1,9 +1,9 @@
-# Makefile
-# Author: KK
+# Compiler
+CXX = g++
 
-CXXFLAGS = -std=c++20 -g -O2\
-	-Isrc\
-	-fopenmp -Wpedantic -Wall -Wextra -Werror\
+# Compiler flags
+CXXFLAGS = -std=c++20 -g -O2 -Isrc -fopenmp\
+	-Wpedantic -Wall -Wextra -Werror\
 	-Wdisabled-optimization\
 	-Wlogical-op\
 	-Wmissing-declarations\
@@ -13,22 +13,16 @@ CXXFLAGS = -std=c++20 -g -O2\
 	-Wswitch-default\
 	-Wsign-conversion\
 	-Wfloat-conversion
-CXX = g++ # icpc
-OBJS = src/WignerSolver.o \
-	src/WignerIO.o \
-	src/WignerTools.o \
-	src/Poisson1D.o \
-	src/test/TestPoisson1D.o \
-	src/test/TestWignerSolver.o \
-	main.o
-LDLIBS = -larmadillo -lsuperlu -lopenblas -lm -fopenmp
-#-lblas <-> -lopenblas
-#-lsuperlu -larmadillo -lopenblas -lm -fopenmp #-m64 -I${MKLROOT}/include # -mkl
-#-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
-# -lm -- math library
+
+# Object files
+OBJS = src/WignerSolver.o src/WignerIO.o src/WignerTools.o src/Poisson1D.o\
+	src/test/TestDerivative.o src/test/TestPoisson1D.o src/test/TestWignerSolver.o main.o
+
+# Libraries
+LIBS = -larmadillo -lsuperlu -lopenblas -lm
 
 run: $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 clean:
 	rm -f $(OBJS) run

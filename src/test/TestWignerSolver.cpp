@@ -1,4 +1,3 @@
-#include "lib.hpp"
 #include "WignerSolver.hpp"
 #include "Poisson1D.hpp"
 

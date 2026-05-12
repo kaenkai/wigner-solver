@@ -2,7 +2,6 @@
 #define WIGNERSOLVER_HPP
 
 #include "lib.hpp"
-#include <armadillo>
 
 using namespace AtomicUnits;
 

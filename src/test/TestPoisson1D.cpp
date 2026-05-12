@@ -1,4 +1,3 @@
-#include "lib.hpp"
 #include "Poisson1D.hpp"
 
 using namespace AtomicUnits;
@@ -86,7 +85,7 @@ void Poisson1D::testExponentCharge(){
     double epsilon = p.epsilonR_/4./M_PI;
     p.rho_ = arma::linspace(0, len, nx)
         .transform(
-            [alpha, len, epsilon](double x)->double{
+            [alpha, len, epsilon](double x) -> double {
                 return -epsilon*std::pow(alpha/len, 2)*std::exp(alpha*x/len);
             }
         );
@@ -98,7 +97,7 @@ void Poisson1D::testExponentCharge(){
     // -------------------
     arma::vec phi_an = arma::linspace(0, len, nx)
         .transform(
-            [alpha, len](double x)->double{
+            [alpha, len](double x) -> double {
                 return -std::exp(alpha*x/len);
             }
         );
@@ -149,7 +148,7 @@ void Poisson1D::testSineCharge(){
     int k = 6;
     p.rho_ = arma::linspace(0, len, p.nx_)
         .transform(
-            [k, len, epsilon](double x)->double{
+            [k, len, epsilon](double x) -> double {
                 return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
             }
         );
@@ -164,12 +163,12 @@ void Poisson1D::testSineCharge(){
     // -------------------
     arma::vec phi_an = arma::linspace(0, len, p.nx_)
         .transform(
-            [k, len](double x)->double{
+            [k, len](double x) -> double {
                 return -std::sin(k*M_PI*x/len);
             }
         );
     arma::vec phi_err = (phi_num-phi_an);
-    phi_err.transform([](double x)->double{return std::abs(x);});
+    phi_err.transform([](double x) -> double {return std::abs(x);});
 
     // -------------
     // Print results
@@ -214,7 +213,7 @@ double Poisson1D::testSine(){
     double len = (nx_-1)*h_;
     rho_ = arma::linspace(0, len, nx_)
         .transform(
-            [k, len, epsilon](double x)->double{
+            [k, len, epsilon](double x) -> double {
                 return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
             }
         );
@@ -227,12 +226,12 @@ double Poisson1D::testSine(){
     // -------------------
     arma::vec phi_an = arma::linspace(0, len, nx_)
         .transform(
-            [k, len](double x)->double{
+            [k, len](double x) -> double {
                 return -std::sin(k*M_PI*x/len);
             }
         );
     arma::vec phi_err = (phi_num-phi_an);
-    phi_err.transform([](double x)->double{return std::abs(x);});
+    phi_err.transform([](double x) -> double {return std::abs(x);});
 
     return arma::max(phi_err);
 }
@@ -281,7 +280,7 @@ void Poisson1D::testSelfConsistency() {
     int k = 6;
     arma::vec rho = arma::linspace(0, len, nx)
         .transform(
-            [k, len, epsilon](double x)->double{
+            [k, len, epsilon](double x) -> double {
                 return -epsilon*std::pow(k*M_PI/len, 2)*std::sin(k*M_PI*x/len);
             }
         );

@@ -1,9 +1,10 @@
 #ifndef Poisson1D_HPP
 #define Poisson1D_HPP
 
-#include <armadillo>
+#include "lib.hpp"
 
 using namespace arma;
+
 
 class Poisson1D {
 
