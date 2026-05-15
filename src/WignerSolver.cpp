@@ -1,4 +1,5 @@
 #include "lib.hpp"
+#include <armadillo>
 #include "WignerSolver.hpp"
 
 using namespace AtomicUnits;
@@ -7,6 +8,7 @@ using namespace AtomicUnits;
 /** 
  * Solve stationary Wigner equation
  * @todo review armadillo options for sparse matrix solvers
+ * @todo paralleling
  */
 void WignerSolver::solveBTE() {
     u_ = uB_ + uC_;
@@ -14,8 +16,7 @@ void WignerSolver::solveBTE() {
     d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
 
-    /// TODO: OpenMP parallel calculations
-    #pragma omp parallel for collapse(2) shared(a_, b_)
+    // #pragma omp parallel for collapse(2) shared(a_, b_)
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j) {
             diffusionTerm(i, j, -1);
@@ -26,16 +27,16 @@ void WignerSolver::solveBTE() {
     }  // end i loop
 
     // Setting up solver options
-    arma::superlu_opts opts;
-    opts.symmetric = true;
-    opts.equilibrate = false;
-    opts.permutation = arma::superlu_opts::COLAMD;
-    opts.refine = arma::superlu_opts::REF_EXTRA;  //     iterative refinement in extra precision
+    // arma::superlu_opts opts;
+    // opts.symmetric = true;
+    // opts.equilibrate = false;
+    // opts.permutation = arma::superlu_opts::COLAMD;
+    // opts.refine = arma::superlu_opts::REF_EXTRA;  //     iterative refinement in extra precision
     // opts.allow_ugly  = false;
-    opts.pivot_thresh = 0;
+    // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
-    arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+    arma::spsolve(x, a_, b_, "superlu");  // use SuperLU solver
 
     f_.zeros();
     for (size_t i=0; i<nx_; ++i)
@@ -90,9 +91,6 @@ void WignerSolver::solveWTE() {
  * @deprecated this function is not used anymore
  */
 void WignerSolver::solveTimeEv() {
-    // Boundary conditions
-    setBoundCond();
-
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
@@ -248,23 +246,15 @@ void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
     double F = -du_(i);
     double C = F/dk_/2.;
     if (dt > 0) C *= dt/2.;
-    if (F <= 0) {
-        if (j == nk_-1) {
-            a_(r, r) += -C;
-        }
-        else{
-            a_(r, r) += -C;
-            a_(r, r+1) += C;
-        }
-    }
-    else if (F > 0) {
-        if (j == 0) {
-            a_(r, r) += C;
-        }
-        else {
-            a_(r, r) += C;
+    if (F > 0) {
+        a_(r, r) += C;
+        if (j > 0)
             a_(r, r-1) += -C;
-        }
+    }
+    else if (F < 0) {
+        a_(r, r) += -C;
+        if (j < nk_-1)
+            a_(r, r+1) += C;
     }
 }
 
@@ -309,7 +299,7 @@ void WignerSolver::scatteringTerm(size_t i, size_t j, double dt) {
     if (dt > 0) cR *= dt/2., cM *= dt/2., cL *= dt/2.;
     // #################### rR term ####################
     a_(r, r) += cR;
-    b_(r) += fEq_(i, j)*cR;
+    b_(r) += feq_(i, j)*cR;
     // #################### rM term ####################
     a_(r, r) += cM;
     a_(r, i*nk_+(nk_-j-1)) += -cM;

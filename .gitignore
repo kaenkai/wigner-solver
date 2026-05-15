@@ -41,28 +41,26 @@
 *.gle
 
 # Output files
+*.out
 *.dat
-*.output
-*.z
 *.csv
 *.bin
+*.z
 *.txt
+out
 
 # Input files
 *.in
 
 # Output data folder
-/output/*.png
-/output/*.output
-/output/*.csv
-/output/*.bin
-/output/*.z
-/output/GnuplotScripts/*.png
 !/output/GnuplotScripts/*.gp
 !/output
 
 # Idea files
 .idea/
+
+# vsCode files
+.vscode/
 
 # Temporary files
 *.BAK

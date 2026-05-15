@@ -49,7 +49,7 @@ set origin 0,-0.04
 # set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
 # set label "{/Symbol t} = {/Symbol t}_M" at graph 0.1,0.85 textcolor "white" front
 
-splot [:] [:] 'wf.dat' u ($1):2:3 with pm3d
+splot [:] [:] 'wf.out' u ($1):2:3 with pm3d
 # splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"

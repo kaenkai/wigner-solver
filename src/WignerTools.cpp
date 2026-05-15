@@ -1,35 +1,9 @@
 #include "lib.hpp"
 #include "WignerSolver.hpp"
+#include <armadillo>
+#include <cmath>
 
 using namespace AtomicUnits;
-
-
-/** 
- * Sets up equilibrium function
- * if input_file is not empty: reads equilibrium from input_file
- * solves WTE for 0 V bias otherwise
- * @param input_file input file, empty string as default
- * @deprecated this function is not used anymore, equilibrium function is calculated in solveBTE() for 0 V bias, and read from file otherwise
- */
-void WignerSolver::setEquilibriumFunction(std::string input_file = ""){
-    if (input_file.empty())  {
-        double uBias = uBias_, rR = rR_;
-        uBias_ = 0, rR_ = 0.;
-        solveBTE();
-        for (size_t i=0; i<nx_; ++i)
-            for (size_t j=0; j<nk_; ++j)
-                fEq_(i,j) = f_(i,j);
-        f_.zeros();
-        uBias_ = uBias, rR_ = rR;
-    }
-    else {
-        fEq_.load(input_file);
-        if (fEq_.size() != f_.size()) {
-            cout<<"ERROR IN setEquilibriumFunction: fEq_.size() != f_.size()"<<endl;
-            exit(0);
-        }
-    }
-}
 
 
 /**
@@ -77,63 +51,31 @@ double WignerSolver::calcCurrentDensity() {
 /**
  * Calculates carrier density in x-space
  * @return carrier density in x-space
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 arma::vec WignerSolver::calcCD_X(){
-    arma::vec cdX(nx_, arma::fill::zeros);
-    for (size_t i=nx_; i--;) {
-        for (size_t j=1; j<nk_/2; ++j)
-            // cdX(i) += (
-            //     f_(i,2*j-2) +
-            //     4*f_(i,2*j-1) +
-            //     f_(i,2*j)
-            // )*dk_/3.;
-            cdX(i) += (
-                f_(i,j-1) +
-                f_(i,j)
-            )*dk_/2.;
-    }
-    cdX /= (2.*M_PI);
-    return cdX;
+    return arma::trapz(k_, f_, 1).as_col()/2./M_PI;
 }
 
 
 /**
  * Calculates carrier density in k-space
  * @return carrier density in k-space
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 arma::vec WignerSolver::calcCD_K(){
-    arma::vec cdK(nx_, arma::fill::zeros);
-    for (size_t j=nk_; j--;) {
-        for (size_t i=1; i<nx_/2; ++i)
-            cdK(j) += (
-                f_(2*i-2,j) +
-                4*f_(2*i-1,j) +
-                f_(2*i,j)
-            )*dx_/3.;  // simpson
-    }
-    return cdK;
+    return arma::trapz(x_, f_, 0).as_col();
 }
 
 
 /**
  * Calculates density function norm (integral over whole space)
+ * @todo resolve problems with normalization, should be equal to 1
  */
 double WignerSolver::calcNorm(){
-    double sum_x = 0;
-    double sum_k = 0;
-    for (size_t i=nx_; i--;) {
-        sum_k = 0;
-        for (size_t j=1; j<nk_/2; ++j)
-            // sum_k += ( f_(i,j) + f_(i,j-1) ) * dk_/2.;
-            sum_k += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
-        // sum_k += ( f_(i,nk_-1) + f_(i,nk_-2) ) * dk_/2.;
-        if (i != 0 && i != nx_-1)
-            sum_x += sum_k * dx_;
-        else
-            sum_x += sum_k * dx_/2.;
-    }
-    if (bcType_ > 0) sum_x /= 2.*M_PI;
-    return sum_x;  // /2./M_PI
+    arma::vec inner = arma::trapz(k_, f_, 1).as_col();
+    arma::rowvec outer = arma::trapz(x_, inner);
+    return outer(0);
 }
 
 
@@ -141,20 +83,9 @@ double WignerSolver::calcNorm(){
  * Expected value in x-space
  */
 double WignerSolver::calcEX(){
-    double sum_x = 0;
-    double sum_k = 0;
-    for (size_t i=nx_; i--;) {
-        sum_k = 0;
-        for (size_t j=nk_-1; j--;)
-            sum_k += ( f_(i,j) + f_(i,j+1) ) * x_(i)  * dk_/2.;
-        sum_k += ( f_(i,nk_-1) + f_(i,nk_-2) ) * x_(i) * dk_/2.;
-        if (i != 0 && i != nx_-1)
-            sum_x += sum_k * dx_;
-        else
-            sum_x += sum_k * dx_/2.;
-    }
-    if (bcType_ > 0) sum_x /= 2.*M_PI;
-    return sum_x / calcNorm();
+    arma::vec inner = arma::trapz(k_, f_, 1).as_col();
+    arma::rowvec outer = arma::trapz(x_, inner % x_, 0);
+    return outer(0);
 }
 
 
@@ -162,21 +93,9 @@ double WignerSolver::calcEX(){
  * Expected value in k-space
  */
 double WignerSolver::calcEK(){
-    double sum_x = 0;
-    double sum_k = 0;
-    for (size_t i=nx_; i--;) {
-        sum_k = 0;
-        for (size_t j=1; j<nk2_; ++j)
-            // sum_k += (f_(i,j-1) + f_(i,j)) * k_(j) * dk_/2.;  //  / 2./M_PI  // trapezoid
-            sum_k += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j)) * k_(j) * dk_/3.;  // simpson
-        // sum_k += ( f_(0) + f_(1) ) * k_(0) * dk_/2.;
-        if (i != 0 && i != nx_-1)
-            sum_x += sum_k * dx_;
-        else
-            sum_x += sum_k * dx_/2.;
-    }
-    if (bcType_ > 0) sum_x /= 2.*M_PI;
-    return sum_x / calcNorm();
+    arma::rowvec inner = arma::trapz(x_, f_, 0).as_row();
+    arma::vec outer = arma::trapz(k_, inner % k_.as_row(), 1);
+    return outer(0); 
 }
 
 
@@ -289,41 +208,35 @@ void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double w
 
 /** 
  * Gaussian wave packet initial conditions
- * @param gwp_x0, gwp_k0 GWP position
- * @param gwp_dx, gwp_dk GWP size
- * @param N number of electrons in GWP
+ * @param gwp_x0 GWP position in x-space
+ * @param gwp_k0 GWP position in k-space
+ * @param gwp_dx GWP size in x-space
+ * @param gwp_dk GWP size in k-space
+ * @param N number of particles in GWP
  */
-void WignerSolver::addWavePacket(
-    double gwp_x0, double gwp_dx,
-    double gwp_k0, double gwp_dk,
-    int N) {
-    double A = N / (gwp_dx*gwp_dk*2*M_PI);
-    cout<<"# Setting up GWP with parameters:\n"
-    <<"# gwp_x0 = "<<gwp_x0*AU_nm<<" nm, "<<gwp_x0<<" a.u.\n"
-    <<"# gwp_dx = "<<gwp_dx*AU_nm<<" nm, "<<gwp_dx<<" a.u.\n"
-    <<"# gwp_p0 = "<<gwp_k0<<" a.u.\n"
-    <<"# gwp_dp = "<<gwp_dk<<" a.u.\n"
-    <<"# gwp_A = "<<A/AU_cm2<<" cm^-2, "<<A<<" a.u.\n"
-    <<"# N = "<<N<<" electrons\n"<<endl;
-    double sx = 2*gwp_dx*gwp_dx, sk = 2*gwp_dk*gwp_dk;
+void WignerSolver::addWavePacket(double x0, double sig_x, double k0, double sig_k) {
+    double A = 1 / (sig_x*sig_k*2*M_PI);
+    cout << "# Setting up GWP with parameters:\n"
+    << "# x0 = " << x0*AU_nm << " nm = " << x0 << " au, sig_x = " << sig_x*AU_nm << " nm = " << sig_x <<" au\n"
+    << "# k0 = " << k0 << " au, sig_k = " << sig_k << " au\n"
+    << "# A = " << A/AU_cm2 << " cm^-2, " << A << " au\n" <<endl;
+    double sx = 2*sig_x*sig_x, sk = 2*sig_k*sig_k;
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j)
             f_(i,j) += exp(
-                - (k_(j)-gwp_k0)*(k_(j)-gwp_k0)/sk
-                - (x_(i)-gwp_x0)*(x_(i)-gwp_x0)/sx  ) * A; // * gwp_A_, / M_PI
+                - std::pow(k_(j)-k0, 2)/sk
+                - std::pow(x_(i)-x0, 2)/sx
+            ) * A; // * gwp_A_, / M_PI
     }
 }
 
 
 /** 
  * Analitical solution of wave packet time evolution (no potential)
+ * used solely for veryfying numerical solution
  */
-double WignerSolver::wavePacket_TEV(
-    double gwp_x0, double gwp_dx,
-    double gwp_k0, double gwp_dk, 
-    double x, double k) {
-    return exp( -(k-gwp_k0)*(k-gwp_k0)/2./gwp_dk/gwp_dk
-        -(x-gwp_x0)*(x-gwp_x0)/2./gwp_dx/gwp_dx ) / M_PI;
+double WignerSolver::wavePacket_TEV(double x0, double sig_x, double k0, double sig_k, double x, double k) {
+    return exp( -(k-k0)*(k-k0)/2./sig_k/sig_k-(x-x0)*(x-x0)/2./sig_x/sig_x ) / M_PI;
 }
 
 
@@ -335,8 +248,10 @@ double WignerSolver::wavePacket_TEV(
 /**
  * Boundary conditions
  * @todo implement armadillo convolution and simplify
+ * @todo Gamma_ significance
  */
-void WignerSolver::setBoundCond(){
+void WignerSolver::setBoundCond(int bcType){
+    bcType_ = bcType;
     Gamma_ = rG_*.5;
     if (bcType_ == 0)
         bc_.zeros();
@@ -371,15 +286,10 @@ void WignerSolver::setBoundCond(){
             exit(0);
         }
     }
-    std::ofstream file;
-    file.open("output/BC.dat", std::ios::out);
-    file<<"# Boundary conditions\n";
-    file<<"p\tBC\n";
-    for (size_t j=0; j<nk_; ++j) {
-        file<<k_(j)<<'\t'<<bc_(j)<<'\n';
-    }
-    file<<"# "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3;
-    file.close();
+    arma::mat bc_out;
+    bc_out.insert_cols(0, k_);
+    bc_out.insert_cols(1, bc_);
+    bc_out.save("output/bc.out", arma::raw_ascii);
 }
 
 
@@ -389,7 +299,7 @@ void WignerSolver::setBoundCond(){
  * @return supply function value
  */
 double WignerSolver::supplyFunction(double k){
-    double mu = k > 0 ? uL_ : uR_;
+    double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
     if (ex < 700)
@@ -427,7 +337,7 @@ inline double WignerSolver::sf(double mu, double energy) {
 
 
 /**
- * Equilibrium function for electrons in contact
+ * Contact equilibrium function (used only in convolution)
  * for quantum boundary conditions -> supply function
  * for classical boundary conditions -> 1D Maxwell-Boltzmann distribution
  * @param mu chemical potential
@@ -448,7 +358,7 @@ double WignerSolver::eqFun(double mu, double energy) {
  * @return Lorentzian and supply function convolution
  */
 double WignerSolver::lorentz(double k) {
-    double mu = k > 0 ? uL_ : uR_;
+    double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
     double beta = 1/(KB/AU_eV*temp_);
@@ -483,7 +393,7 @@ double WignerSolver::lorentz(double k) {
  * @return Gauss and supply function convolution
  */
 double WignerSolver::gauss(double k) {
-    double mu = k > 0 ? uL_ : uR_;
+    double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
     double beta = 1/(KB/AU_eV*temp_);
@@ -517,7 +427,7 @@ double WignerSolver::gauss(double k) {
  * @return (pseudo-)Voigt profile and supply function convolution
  */
 double WignerSolver::voigt(double k) {
-    double mu = k > 0 ? uL_ : uR_;
+    double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = Gamma_;
     double beta = 1/(KB/AU_eV*temp_);
@@ -635,7 +545,7 @@ double calcFermiEn(double n0, double m, double T) {
  * @param k wave vector
  */
 double WignerSolver::fermiDirac(double k){
-    double mu = k > 0 ? uL_ : uR_;
+    double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
     return 1./(exp(ex)+1);

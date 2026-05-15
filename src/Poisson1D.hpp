@@ -3,8 +3,6 @@
 
 #include "lib.hpp"
 
-using namespace arma;
-
 
 class Poisson1D {
 

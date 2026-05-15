@@ -76,7 +76,7 @@ int main(){
     // where convolution is with Lorentzian (2, -2), Gaussian (3, -3) or Voigt (4, -4) profile
 	// ------------------------------------------------
     // cout<<"# Setting up BC"<<endl;
-    // f.setBoundCond();
+    // f.setBoundCond(1);
 
     // --------------------------------------
     // Setting equilibrium function from file
@@ -95,12 +95,12 @@ int main(){
     // ---------------------------
     // Derivatives/integrals tests
     // ---------------------------
-    testDerivatives();
+    // testDerivatives();
 
     // ----------------------
     // Wigner/Boltzmann test
 	// ----------------------
-    // WignerSolver::testBTE();
+    testBTE();
 
 	// --------------------------
     // Wave packet time evolution

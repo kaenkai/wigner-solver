@@ -168,14 +168,14 @@ class matrix {
  * @param f function
  * @param h (integration step
  * @return integral
+ * @deprecated arma::trapz function is used
  */
 template <class T>
 double calcInt(arma::vec f, T h){
     size_t n = f.size();
     double ig = 0;
     for (size_t i=1; i<n/2; ++i)
-        ig += (f(i-1) + f(i))*h/2.;  // trapezoid
-        // ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;  // simpson
+        ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;
     return ig;
 }
 
@@ -259,7 +259,8 @@ arma::vec normalDistribution(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., s
 
 
 double calcFermiEn(double, double, double);
-std::map<std::string, double> readParam(std::string);
+std::map<std::string, double> readParameters(std::string);
+void saveMatGP(arma::mat, std::string);
 
 
 // -----
@@ -267,6 +268,7 @@ std::map<std::string, double> readParam(std::string);
 // -----
 
 void testDerivatives();
+void testBTE();
 
 
 #endif

@@ -4,10 +4,17 @@
 using namespace AtomicUnits;
 
 
-// #define GET_VARIABLE_NAME(Variable) (#Variable)
+// -------------------------
+// Read parameters from file
+// -------------------------
 
-// ############################## Read parameters from file ##############################
-
+/**
+ * Reads single parameter value
+ * @param str input file line
+ * @param val_name parameter to search
+ * @param ln input file line number
+ * @return parameter value
+ */
 template<typename T>
 T ReadPar(std::string str, std::string val_name, std::size_t ln){
     size_t pp, eol;
@@ -25,7 +32,11 @@ T ReadPar(std::string str, std::string val_name, std::size_t ln){
 }
 
 
-std::map<std::string, double> readParam(std::string filename){
+/**
+ * Reads parameters from a file
+ * @deprecated parameters are set through main function 
+ */
+std::map<std::string, double> readParameters(std::string filename){
     std::ifstream file (filename);
     std::map<std::string, double> val = {
 		{"calc_mode", 0},
@@ -87,11 +98,31 @@ std::map<std::string, double> readParam(std::string filename){
 }
 
 
+// -----------------------------
+// Print and save data to a file
+// -----------------------------
+
+
 /**
- * Saves Distribution function to wf.dat, wf.bin, and wf.z (GLE format) files
-*/
+ * Save matrix in a format readable by gnuplot
+ */
+void saveMatGP(arma::mat data, std::string filename) {
+    std::ofstream file(filename);
+    file<<"# x y z\n";
+    for (size_t i=0; i<data.n_rows; ++i){
+	    for (size_t j=0; j<data.n_cols; ++j)
+		    file<<i<<' '<<j<<' '<<data(i,j)<<'\n';
+	    file<<"\n";
+	}
+    file.close();
+}
+
+
+/**
+ * Saves Distribution function to wf.out, wf.bin, and wf.z (GLE format) files
+ */
 void WignerSolver::saveDistFun() {
-    std::ofstream wf_out("output/wf.dat");
+    std::ofstream wf_out("output/wf.out");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
 	    for (size_t j=0; j<nk_; ++j)
@@ -111,7 +142,7 @@ void WignerSolver::saveDistFun() {
 }
 
 
-// #################### Print parameters ####################
+/// Print parameters to console
 void WignerSolver::printParam()
 {
     int cw_n = 25, cw_v = 25;
