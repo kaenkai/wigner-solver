@@ -1,14 +1,18 @@
+#include "lib.hpp"
 #include "WignerSolver.hpp"
 #include "Poisson1D.hpp"
 #include <armadillo>
+#include <cmath>
 
 
 // ------------
 // Declarations 
 // ------------
 
-void testNormalization();
-void testExpectedValues();
+
+void testZeroPotential();
+void testStationaryGWP();
+void testNonstationaryGWP();
 
 
 // -----------
@@ -21,7 +25,7 @@ void testExpectedValues();
  * for uBias=0 and no dissipation density function should be independent of x
  * hence int dx f(k) = L*f(k) = L*BC(k)
  */
-void testNormalization() {
+void testZeroPotential() {
     size_t nx = 150, nk = 150;
     double lD = 1500, lC = 0;
     double k_max = 0.1;
@@ -36,41 +40,93 @@ void testNormalization() {
     f.setBoundCond(1);
 
     f.solveBTE();
-    f.normalization();
-
     f.saveDistFun();
 
     arma::vec cdX = f.calcCD_X();
+    arma::mat cdX_test;
+    cdX_test.insert_cols(0, f.get_x());
+    cdX_test.insert_cols(1, cdX/AU_cm3);
+    cdX_test.insert_cols(2, f.calcCurrentDensity()*AU_A/AU_cm2);
+    cdX_test.save("output/cdX_test.out", arma::raw_ascii);
+
     arma::vec cdK = f.calcCD_K();
     arma::mat cdK_test;
     cdK_test.insert_cols(0, f.get_k());
     cdK_test.insert_cols(1, f.get_bc());
     cdK_test.insert_cols(2, cdK);
-    cdK_test.insert_cols(3, f.get_bc()-cdK/f.get_l());  // for uBias =0 
+    cdK_test.insert_cols(3, f.get_bc()-cdK/f.get_l());
     cdK_test.save("output/cdK_test.out", arma::raw_ascii);
 
     cout << "# Distribution function expected value in X: " << f.calcEX() << endl;
     cout << "# Distribution function expected value in K: " << f.calcEK() << endl;
     cout << "# Distribution function normalization: " << f.calcNorm() << endl;
-    cout << "# Current density: " << f.calcCurrentDensity()*AU_A/AU_cm2 << " A/cm^2" << endl;
     cout << "# Carrier density in x space: " << cdX(0)/AU_cm3 << " cm^-3 at x=0 and " << cdX(nx-1)/AU_cm3 << " cm^-3 at x=L" << endl;
     cout << "# Min and max of distribution function: " << f.get_f().min() << ", " << f.get_f().max() << endl;
 }
 
 
-void testExpectedValues() {
-    size_t nx = 150, nk = 150;
-    double lD = 1000, lC = 0;
+void testStationaryGWP() {
+    size_t nx = 150, nk = 100;
+    double lD = 2137, lC = 0;
     double k_max = 0.1;
     WignerSolver f(nx, lD, lC, nk, k_max);
 
-    f.addWavePacket(333.5, 20., 0.05, 0.005);
-    
+    f.set_m(0.067);
+    f.set_temp(300);
+    f.set_epsilonR(13.1);
+
+    f.addWavePacket(666.666, 67., 0.049, 0.00411);
     f.saveDistFun();
 
-    cout << "# Wavepacket expected value in X: " << f.calcEX() << endl;
-    cout << "# Wavepacket expected value in K: " << f.calcEK() << endl;
-    cout << "# Wavepacket normalization: " << f.calcNorm() << endl;
+    arma::mat test;
+    test.insert_cols(0, f.get_k());
+    test.insert_cols(1, f.calcCD_K());
+    test.save("output/test.out", arma::raw_ascii);
+
+    cout << "# Gaussian wave packet localization, blur" << endl;
+    cout << "# x-space: " << f.calcEX() << ", " << f.calcSDX() << endl;
+    cout << "# k-space: " << f.calcEK() << ", " << f.calcSDK() << endl;
+    cout << "# GWP normalization: " << f.calcNorm() << endl;
+}
+
+
+void testNonstationaryGWP() {
+    size_t nx = 150, nk = 100;
+    double lD = 2137, lC = 0;
+    double k_max = 0.1;
+    WignerSolver f(nx, lD, lC, nk, k_max);
+
+    f.set_m(0.067);
+    f.set_temp(300);
+    f.set_epsilonR(13.1);
+
+    f.setBoundCond(0);
+    arma::vec gwp_params = {666.666, 67., 0.049, 0.00411}; 
+    f.addWavePacket(gwp_params(0), gwp_params(1), gwp_params(2), gwp_params(3));
+    double gwp_center = gwp_params(0);
+    
+    cout << "# Gaussian wave packet localization, blur" << endl;
+    cout << "# x-space: " << f.calcEX() << ", " << f.calcSDX() << endl;
+    cout << "# k-space: " << f.calcEK() << ", " << f.calcSDK() << endl;
+    cout << "# GWP normalization: " << f.calcNorm() << endl << endl;
+    
+    f.set_dt(.1E-15/AU_s);
+    double t = 0, t_total = 3E-14/AU_s;
+    cout << "# t\tE[x]\tE[k]\tSD[x]\tSD[k]\tE[x]_an\tN\tJ" << endl;
+    cout << "# fs\tau\tau\tau\tau\tau\tau\tau" << endl;
+    while (t <= t_total) {
+        t += f.get_dt();
+        f.solveTimeDependentBTE();
+        gwp_center += gwp_params(2)/f.get_m()*f.get_dt() ;
+        cout << t*AU_s*1e15 << '\t'
+             << f.calcEX() << '\t' << f.calcEK() << '\t'
+             << f.calcSDX() << '\t' << f.calcSDK() << '\t'
+             << gwp_center << '\t'
+             << f.calcNorm() << '\t'
+             << arma::as_scalar(arma::trapz(f.get_x(), f.calcCurrentDensity())) << endl;
+    }
+
+    f.saveDistFun();
 }
 
 
@@ -79,8 +135,9 @@ void testExpectedValues() {
 // ------------------
 
  void testBTE() {
-    testNormalization();
-    // testExpectedValues();
+    // testZeroPotential();
+    // testStationaryGWP();
+    testNonstationaryGWP();
     // -------------------------------------------
     // Solve Poisson equation for linear potential
     // -------------------------------------------

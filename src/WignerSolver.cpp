@@ -8,7 +8,7 @@ using namespace AtomicUnits;
 /** 
  * Solve stationary Wigner equation
  * @todo review armadillo options for sparse matrix solvers
- * @todo paralleling
+ * @todo OpenMP parallel calculations
  */
 void WignerSolver::solveBTE() {
     u_ = uB_ + uC_;
@@ -31,12 +31,12 @@ void WignerSolver::solveBTE() {
     // opts.symmetric = true;
     // opts.equilibrate = false;
     // opts.permutation = arma::superlu_opts::COLAMD;
-    // opts.refine = arma::superlu_opts::REF_EXTRA;  //     iterative refinement in extra precision
+    // opts.refine = arma::superlu_opts::REF_EXTRA;
     // opts.allow_ugly  = false;
     // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
-    arma::spsolve(x, a_, b_, "superlu");  // use SuperLU solver
+    arma::spsolve(x, a_, b_, "superlu");
 
     f_.zeros();
     for (size_t i=0; i<nx_; ++i)
@@ -48,6 +48,7 @@ void WignerSolver::solveBTE() {
 /** 
  * Solve stationary Wigner equation
  * @todo review armadillo options for sparse matrix solvers
+ * @todo OpenMP parallel calculations
  */
 void WignerSolver::solveWTE() {
     u_ = uB_ + uC_;
@@ -55,8 +56,7 @@ void WignerSolver::solveWTE() {
     d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
 
-    /// TODO: OpenMP parallel calculations
-    #pragma omp parallel for collapse(2) shared(a_, b_)
+    // #pragma omp parallel for collapse(2) shared(a_, b_)
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j) {
             diffusionTerm(i, j, -1);
@@ -66,16 +66,16 @@ void WignerSolver::solveWTE() {
     }  // end i loop
 
     // Setting up solver options
-    arma::superlu_opts opts;
-    opts.symmetric = true;
-    opts.equilibrate = false;
-    opts.permutation = arma::superlu_opts::COLAMD;
-    opts.refine = arma::superlu_opts::REF_EXTRA;  //     iterative refinement in extra precision
+    // arma::superlu_opts opts;
+    // opts.symmetric = true;
+    // opts.equilibrate = false;
+    // opts.permutation = arma::superlu_opts::COLAMD;
+    // opts.refine = arma::superlu_opts::REF_EXTRA;
     // opts.allow_ugly  = false;
-    opts.pivot_thresh = 0;
+    // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
-    arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+    arma::spsolve(x, a_, b_, "superlu");
 
     f_.zeros();
     for (size_t i=0; i<nx_; ++i)
@@ -85,12 +85,12 @@ void WignerSolver::solveWTE() {
 
 
 /** 
- * Solve time dependent Wigner equation
+ * Solve time dependent BTE
  * @todo review armadillo options for sparse matrix solvers
  * @todo move solution to solveBTE() and solveWTE()
  * @deprecated this function is not used anymore
  */
-void WignerSolver::solveTimeEv() {
+void WignerSolver::solveTimeDependentBTE() {
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
@@ -109,16 +109,16 @@ void WignerSolver::solveTimeEv() {
         }  // end j loop
     }  // end i loop
 
-    arma::superlu_opts opts;
-    opts.symmetric = true;
-    opts.equilibrate = false;
-    opts.permutation = arma::superlu_opts::COLAMD;
-    opts.refine = arma::superlu_opts::REF_EXTRA;  //     iterative refinement in extra precision
+    // arma::superlu_opts opts;
+    // opts.symmetric = true;
+    // opts.equilibrate = false;
+    // opts.permutation = arma::superlu_opts::COLAMD;
+    // opts.refine = arma::superlu_opts::REF_EXTRA;
     // opts.allow_ugly  = false;
-    opts.pivot_thresh = 0;
+    // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
-    arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+    arma::spsolve(x, a_, b_, "superlu");
 
     for (size_t i=0; i<nx_; ++i)
         for (size_t j=0; j<nk_; ++j)
@@ -127,110 +127,61 @@ void WignerSolver::solveTimeEv() {
 
 
 /**
- * Diffusion term, hybrid HDS22 rule is used
+ * Diffusion term, UDS1 rule is used
  * @param i, j grid point indices
  * @param dt time step, if dt < 0, diffusion term is calculated for stationary Wigner equation, otherwise for time evolution
  * @todo review implementation of HDS22 scheme, check if implemented correctly and if it is stable for time dependent calculations
  * @todo implement other schemes and compare results, e.g. UDS1, UDS2
  */
 void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
-    // Fills Boltzmann equation matrix with diffusion term
     size_t r = i*nk_ + j;
-    double k = k_(j), bc = bc_(j);
-    double C = k/m_/dx_;
-    double B = bc*C;
-    if (dt > 0) C *= dt/2., B *= dt;
-    if (k<0.) {
-        if (i==nx_-1) {
-            a_(r, r) += -C;
-            b_(r) += -B;
+    int alpha = 2, beta = 1;
+    double C = k_(j)/m_/dx_/(alpha+beta)/2.;
+    if (dt > 0) C *= dt/2.;
+    if (k_(j) < 0.) {
+        a_(r, r) += -3.*beta*C;
+        if (i == 0) {
+            b_(r) += alpha*C*bc_(j);
+            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
+            a_(r, (i+2)*nk_ + j) += -beta*C;
+        }
+        else if (i == nx_-1) {
+            a_(r, (i-1)*nk_ + j) += -alpha*C;
+            b_(r) += -(alpha+4.*beta)*C*bc_(j) + beta*C*bc_(j);
+        }
+        else if (i == nx_-2) {
+            a_(r, (i-1)*nk_ + j) += -alpha*C;
+            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
+            b_(r) += beta*C*bc_(j);
         }
         else {
-            a_(r, r) += -C;
-            a_(r, (i+1)*nk_+j) += C;
+            a_(r, (i-1)*nk_ + j) += -alpha*C;
+            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
+            a_(r, (i+2)*nk_ + j) += -beta*C;
         }
     }
-    if (k>0.) {
-        if (i==0) {
-            a_(r, r) += C;
-            b_(r) += B;
+    if (k_(j) > 0.) {
+        a_(r, r) += 3.*beta*C;
+        if (i == nx_-1) {
+            b_(r) += -alpha*C*bc_(j);
+            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
+            a_(r, (i-2)*nk_ + j) += beta*C;
+        }
+        else if (i == 0) {
+            a_(r, (i+1)*nk_ + j) += alpha*C;
+            b_(r) += (alpha+4.*beta)*C*bc_(j) - beta*C*bc_(j);
+        }
+        else if (i == 1) {
+            a_(r, (i+1)*nk_ + j) += alpha*C;
+            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
+            b_(r) += -beta*C*bc_(j);
         }
         else {
-            a_(r, r) += C;
-            a_(r, (i-1)*nk_+j) += -C;
+            a_(r, (i+1)*nk_ + j) += alpha*C;
+            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
+            a_(r, (i-2)*nk_ + j) += beta*C;
         }
     }
-    // double alpha = 2., beta = 1.;
-    // double C = k/m_/dx_/2.;
-    // double D = C/(alpha+beta);
-    // double B = bc*D;
-    // if (dt > 0) C *= dt/2., D *= dt/2., B *= dt;
-    // if (k<0.) {
-    //     if (i==0) {  // UDS2 is used at outgoing boundary
-    //         // b_(r) += B*alpha;
-    //         // a_(r, r) += -3.*beta*D;
-    //         // a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-    //         // a_(r, (i+2)*nk_ + j) += -beta*D;
-    //         a_(r, r) += -3.*C;
-    //         a_(r, (i+1)*nk_ + j) += 4.*C;
-    //         a_(r, (i+2)*nk_ + j) += -C;
-    //     }
-    //     else if (i==nx_-1) {
-    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
-    //         a_(r, r) += -3.*beta*D;
-    //         b_(r) += -B*(alpha+3.*beta);
-    //         // a_(r, r) += -3.*C;
-    //         // b_(r) += -3.*B;
-    //     }
-    //     else if (i==nx_-2) {
-    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
-    //         a_(r, r) += -3.*beta*D;
-    //         a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-    //         b_(r) += B*beta;
-    //         // a_(r, r) += -3.*C;
-    //         // a_(r, (i+1)*nk_ + j) += 4.*C;
-    //         // b_(r) += B;
-    //     }
-    //     else {
-    //         a_(r, (i-1)*nk_ + j) += -alpha*D;
-    //         a_(r, r) += -3.*beta*D;
-    //         a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-    //         a_(r, (i+2)*nk_ + j) += -beta*D;
-    //     }
-    // }
-    // if (k>0.) {
-    //     if (i==nx_-1) {  // UDS2 is used at outgoing boundary
-    //         // b_(r) += -alpha*B;
-    //         // a_(r, r) += 3.*beta*D;
-    //         // a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-    //         // a_(r, (i-2)*nk_ + j) += beta*D;
-    //         a_(r, r) += 3.*C;
-    //         a_(r, (i-1)*nk_ + j) += -4.*C;
-    //         a_(r, (i-2)*nk_ + j) += C;
-    //     }
-    //     else if (i==0) {
-    //         a_(r, (i+1)*nk_ + j) += alpha*D;
-    //         a_(r, r) += 3.*beta*D;
-    //         b_(r) += (alpha+3.*beta)*B;
-    //         // a_(r, r) += 3.*C;
-    //         // b_(r) += 3.*B;
-    //     }
-    //     else if (i==1) {
-    //         a_(r, (i+1)*nk_ + j) += alpha*D;
-    //         a_(r, r) += 3.*beta*D;
-    //         a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-    //         b_(r) += -beta*B;
-    //         // a_(r, r) += 3.*C;
-    //         // a_(r, (i-1)*nk_ + j) += -4.*C;
-    //         // b_(r) += -B;
-    //     }
-    //     else {
-    //         a_(r, (i+1)*nk_ + j) += alpha*D;
-    //         a_(r, r) += 3.*beta*D;
-    //         a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-    //         a_(r, (i-2)*nk_ + j) += beta*D;
-    //     }
-    // }
 }
 
 
@@ -238,8 +189,8 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
  * Drift term, fills Boltzmann equation matrix with drift terms, central CD1 scheme is used
  * @param i, j grid point indices
  * @param dt time step, if dt <= 0 the term is stationary, otherwise time dependent
- * @todo review implementation of HDS22 scheme, check if implemented correctly and if it is stable for time dependent calculations
- * @todo implement other schemes and compare results, e.g. UDS1, UDS2
+ * @todo implement other more complex schemes, i.e. UDS2 or HDS22
+ * @todo consider other boundary condition 
  */
 void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
@@ -259,6 +210,11 @@ void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
 }
 
 
+/**
+ * Non-local potential in WTE
+ * @param i, j grid point indices
+ * @todo verify and implement time dependence
+ */
 void WignerSolver::nonLocalPotentialTerm(size_t i, size_t j) {
     size_t r = i*nk_ + j;
     size_t v;
@@ -295,12 +251,12 @@ void WignerSolver::nonLocalPotentialTerm(size_t i, size_t j) {
 /// Scattering term
 void WignerSolver::scatteringTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
-    double cR = rR_, cM = rM_, cL = lambda_/dk_/dk_;
+    double cR = scR_, cM = scM_, cL = lambda_/dk_/dk_;
     if (dt > 0) cR *= dt/2., cM *= dt/2., cL *= dt/2.;
-    // #################### rR term ####################
+    // #################### scR term ####################
     a_(r, r) += cR;
     b_(r) += feq_(i, j)*cR;
-    // #################### rM term ####################
+    // #################### scM term ####################
     a_(r, r) += cM;
     a_(r, i*nk_+(nk_-j-1)) += -cM;
     // #################### Lambda term ####################
@@ -314,7 +270,7 @@ void WignerSolver::scatteringTerm(size_t i, size_t j, double dt) {
         a_(r, r+1) += -cL;
     }
     // #################### gamma term ####################
-    double C = -rF_;
+    double C = -scF_;
     if (dt > 0) C *= dt/2.;
     double F = -du_(i);  // classical force equal to -du/dx
     // UDS1

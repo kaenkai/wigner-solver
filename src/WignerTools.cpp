@@ -13,38 +13,30 @@ using namespace AtomicUnits;
  * @return current density
  * @see W. R. Frensley. Physical Review B, 36(3):1570–1580, 1987
  */ 
-double WignerSolver::calcCurrentDensity() {
-    currD_.zeros();
-    // double alpha = 2., beta = 1.;
-    // for (size_t i=1; i<nx_-2; ++i) {
-    //     for (size_t j=0; j<nk2_; ++j)  // k < 0
-    //         currD_(i) += 
-    //             k_(j)*(
-    //                 alpha*f_(i,j) +
-    //                 (alpha+3*beta)*f_(i+1,j) -
-    //                 beta*f_(i+2,j)
-    //             );
-    //     for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-    //         currD_(i) += 
-    //             k_(j)*(
-    //                 alpha*f_(i+1,j) +
-    //                 (alpha+3*beta)*f_(i,j) -
-    //                 beta*f_(i-1,j)
-    //             );
-    // }
-    // currD_(0) = currD_(1);
-    // currD_(nx_-2) = currD_(nx_-3);
-    // currD_(nx_-1) = currD_(nx_-2);
-    // currD_ *= dk_/m_/4./M_PI/(alpha+beta);
-    for (size_t i=0; i<nx_-1; ++i) {
+arma::vec WignerSolver::calcCurrentDensity() {
+    arma::vec currD(nx_, arma::fill::zeros);
+    int alpha = 2, beta = 1;
+    for (size_t i=1; i<nx_-2; ++i) {
         for (size_t j=0; j<nk2_; ++j)  // k < 0
-            currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
+            currD(i) += 
+                k_(j)*(
+                    alpha*f_(i,j) +
+                    (alpha+3*beta)*f_(i+1,j) -
+                    beta*f_(i+2,j)
+                );
         for (size_t j=nk2_; j<nk_; ++j)  // k > 0
-            currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
+            currD(i) += 
+                k_(j)*(
+                    alpha*f_(i+1,j) +
+                    (alpha+3*beta)*f_(i,j) -
+                    beta*f_(i-1,j)
+                );
     }
-    currD_(nx_-1) = currD_(nx_-2);
-    currD_ *= dk_/m_/2./M_PI;
-    return sum(currD_)*dx_/l_;
+    currD(0) = currD(1);
+    currD(nx_-2) = currD(nx_-3);
+    currD(nx_-1) = currD(nx_-2);
+    currD *= dk_/m_/4./M_PI/(alpha+beta);
+    return currD;
 }
 
 
@@ -71,109 +63,92 @@ arma::vec WignerSolver::calcCD_K(){
 /**
  * Calculates density function norm (integral over whole space)
  * @todo resolve problems with normalization, should be equal to 1
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 double WignerSolver::calcNorm(){
     arma::vec inner = arma::trapz(k_, f_, 1).as_col();
     arma::rowvec outer = arma::trapz(x_, inner);
-    return outer(0);
+    return arma::as_scalar(outer);
 }
 
 
 /**
- * Expected value in x-space
+ * Expected value of x
+ * @return expected value in x-space
+ * @see https://en.wikipedia.org/wiki/Expected_value
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 double WignerSolver::calcEX(){
+    double norm = calcNorm();
+    if (norm < 1e-12) return 0;
     arma::vec inner = arma::trapz(k_, f_, 1).as_col();
     arma::rowvec outer = arma::trapz(x_, inner % x_, 0);
-    return outer(0);
+    return arma::as_scalar(outer)/norm;
 }
 
 
 /**
- * Expected value in k-space
+ * Expected value of k
+ * @return expected value in k-space
+ * @see https://en.wikipedia.org/wiki/Expected_value
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 double WignerSolver::calcEK(){
+    double norm = calcNorm();
+    if (norm < 1e-12) return 0;
     arma::rowvec inner = arma::trapz(x_, f_, 0).as_row();
     arma::vec outer = arma::trapz(k_, inner % k_.as_row(), 1);
-    return outer(0); 
+    return arma::as_scalar(outer)/norm; 
 }
 
 
 /**
- * Expected value in k-space, squared
+ * Expected value of x squared
+ * @return expected value in x-space
+ * @see https://en.wikipedia.org/wiki/Expected_value
+ * @see https://arma.sourceforge.net/docs.html#trapz
+ */
+double WignerSolver::calcEX2(){
+    double norm = calcNorm();
+    if (norm < 1e-12) return 0;
+    arma::vec inner = arma::trapz(k_, f_, 1).as_col();
+    arma::rowvec outer = arma::trapz(x_, inner % arma::pow(x_, 2), 0);
+    return arma::as_scalar(outer)/norm;
+}
+
+
+/**
+ * Expected value of k squared
+ * @todo verify, use armadillo functions to simplify and speed up
+ * @see https://en.wikipedia.org/wiki/Expected_value
+ * @see https://arma.sourceforge.net/docs.html#trapz
  */
 double WignerSolver::calcEK2(){
-    double sum_x = 0;
-    double sum_k = 0;
-    for (size_t i=nx_; i--;) {
-        sum_k = 0;
-        for (size_t j=nk_-1; j--;)
-            sum_k += ( f_(i,j) + f_(i,j+1) ) * k_(j)*k_(j) * dk_/2.;
-        sum_k += ( f_(i,nk_-1) + f_(i,nk_-2) ) * k_(nk_-1) * k_(nk_-1) * dk_/2.;
-        if (i != 0 && i != nx_-1)
-            sum_x += sum_k * dx_;
-        else
-            sum_x += sum_k * dx_/2.;
-    }
-    if (bcType_ > 0) sum_x /= 2.*M_PI;
-    return sum_x / calcNorm();
+    double norm = calcNorm();
+    if (norm < 1e-12) return 0;
+    arma::rowvec inner = arma::trapz(x_, f_, 0).as_row();
+    arma::vec outer = arma::trapz(k_, inner % arma::pow(k_, 2).as_row(), 1);
+    return arma::as_scalar(outer)/norm; 
 }
 
 
 /**
- * Standard deviation in k-space
- */
-double WignerSolver::calcSDK(){
-    double ev = 0, ev2 = 0, s_ev, s_ev2;
-    for (size_t i=nx_; i--;) {
-        s_ev = 0, s_ev2 = 0;
-        for (size_t j=nk_-1; j--;) {
-            s_ev += ( f_(i,j) + f_(i,j+1) ) * k_(j) * dk_/2.;
-            s_ev2 += ( f_(i,j) + f_(i,j+1) ) * k_(j) * k_(j) * dk_/2.;
-        }
-        if (i == 0 || i == nx_-1) {
-            ev += s_ev * dx_/2.;
-            ev2 += s_ev2 * dx_/2.;
-        }
-        else {
-            ev += s_ev * dx_;
-            ev2 += s_ev2 * dx_;
-        }
-    }
-    if (bcType_ > 0) ev /= 2.*M_PI;
-    if (bcType_ > 0) ev2 /= 2.*M_PI;
-    ev = ev / calcNorm();
-    ev2 = ev2 / calcNorm();
-    return sqrt(ev2-ev*ev);
-}
-
-
-/**
- * Calculates standard deviation in x
+ * Standard deviation of x
+ * @see https://en.wikipedia.org/wiki/Standard_deviation
  */
 double WignerSolver::calcSDX(){
-    double ev = 0, ev2 = 0, s_ev, s_ev2;
-    for (size_t i=0; i<nx_; ++i) {
-        s_ev = 0, s_ev2 = 0;
-        for (size_t j=1; j<nk_; ++j) {
-            s_ev += ( f_(i,j) + f_(i,j-1) ) * x_(i) * dk_/2.;
-            s_ev2 += ( f_(i,j) + f_(i,j-1) ) * x_(i) * x_(i) * dk_/2.;
-        }
-        if (i == 0 || i == nx_-1) {
-            ev += s_ev * dx_/2.;
-            ev2 += s_ev2 * dx_/2.;
-        }
-        else {
-            ev += s_ev * dx_;
-            ev2 += s_ev2 * dx_;
-        }
-    }
-    if (bcType_ > 0) ev /= 2.*M_PI;
-    if (bcType_ > 0) ev2 /= 2.*M_PI;
-    ev = ev / calcNorm();
-    ev2 = ev2 / calcNorm();
-    return sqrt(ev2-ev*ev);
+    return sqrt(calcEX2()-calcEX()*calcEX());
 }
+
+
+/**
+ * Standard deviation of k
+ * @see https://en.wikipedia.org/wiki/Standard_deviation
+ */
+double WignerSolver::calcSDK(){
+    return sqrt(calcEK2()-calcEK()*calcEK());
+}
+
 
 /** 
  * Adds gaussian barrier
@@ -201,42 +176,30 @@ void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double w
 }
 
 
-// -----------------------
-// Wave packet simulations
-// -----------------------
+// --------------------
+// Gaussian wave packet
+// --------------------
 
 
 /** 
- * Gaussian wave packet initial conditions
- * @param gwp_x0 GWP position in x-space
- * @param gwp_k0 GWP position in k-space
- * @param gwp_dx GWP size in x-space
- * @param gwp_dk GWP size in k-space
- * @param N number of particles in GWP
+ * Add gaussian wave packet to distribution function
+ * @param x0 GWP position in x-space
+ * @param delta_x GWP blur in x-space
+ * @param k0 GWP position in k-space
+ * @param delta_k GWP blur in k-space
+ * @see BJS habilitation thesis, p. 62, eq. (2.44)
  */
-void WignerSolver::addWavePacket(double x0, double sig_x, double k0, double sig_k) {
-    double A = 1 / (sig_x*sig_k*2*M_PI);
+void WignerSolver::addWavePacket(double x0, double delta_x, double k0, double delta_k) {
     cout << "# Setting up GWP with parameters:\n"
-    << "# x0 = " << x0*AU_nm << " nm = " << x0 << " au, sig_x = " << sig_x*AU_nm << " nm = " << sig_x <<" au\n"
-    << "# k0 = " << k0 << " au, sig_k = " << sig_k << " au\n"
-    << "# A = " << A/AU_cm2 << " cm^-2, " << A << " au\n" <<endl;
-    double sx = 2*sig_x*sig_x, sk = 2*sig_k*sig_k;
+    << "# x0 = " << x0*AU_nm << " nm = " << x0 << " au, delta_x = " << delta_x*AU_nm << " nm = " << delta_x <<" au\n"
+    << "# k0 = " << k0 << " au, delta_k = " << delta_k << " au\n" <<endl;
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j)
             f_(i,j) += exp(
-                - std::pow(k_(j)-k0, 2)/sk
-                - std::pow(x_(i)-x0, 2)/sx
-            ) * A; // * gwp_A_, / M_PI
+                - std::pow((k_(j)-k0)/delta_k, 2)/2
+                - std::pow((x_(i)-x0)/delta_x, 2)/2
+            ) * 2;
     }
-}
-
-
-/** 
- * Analitical solution of wave packet time evolution (no potential)
- * used solely for veryfying numerical solution
- */
-double WignerSolver::wavePacket_TEV(double x0, double sig_x, double k0, double sig_k, double x, double k) {
-    return exp( -(k-k0)*(k-k0)/2./sig_k/sig_k-(x-x0)*(x-x0)/2./sig_x/sig_x ) / M_PI;
 }
 
 
@@ -247,12 +210,12 @@ double WignerSolver::wavePacket_TEV(double x0, double sig_x, double k0, double s
 
 /**
  * Boundary conditions
- * @todo implement armadillo convolution and simplify
- * @todo Gamma_ significance
+ * @param bcType boundary condition type
+ * @todo SIMPLIFY!!!
+ * @todo implement armadillo convolution
  */
 void WignerSolver::setBoundCond(int bcType){
-    bcType_ = bcType;
-    Gamma_ = rG_*.5;
+    bcType_ = bcType;;
     if (bcType_ == 0)
         bc_.zeros();
     else if (bcType_ == 1)
@@ -262,7 +225,7 @@ void WignerSolver::setBoundCond(int bcType){
         for (size_t j=0; j<nk_; ++j)
             bc_(j) = gaussian(k_(j));
     else {
-        if (rG_ > 0) {
+        if (scG_ > 0) {
             if (bcType_ == 2 || bcType_ == -2)
                 for (size_t j=0; j<nk_; ++j)
                     bc_(j) = lorentz(k_(j));
@@ -281,7 +244,7 @@ void WignerSolver::setBoundCond(int bcType){
         }
         else {
             cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << endl;
-            cout << "# rG_ = " << rG_
+            cout << "# scG_ = " << scG_
                 << " SCATTERING RATE SHOULD BE GREATER THAN 0" << endl;
             exit(0);
         }
@@ -360,7 +323,7 @@ double WignerSolver::eqFun(double mu, double energy) {
 double WignerSolver::lorentz(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
-    double u = k*k/m/2., g = Gamma_;
+    double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(KB/AU_eV*temp_);
     // ---------------
     // Lorentz profile
@@ -395,7 +358,7 @@ double WignerSolver::lorentz(double k) {
 double WignerSolver::gauss(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
-    double u = k*k/m/2., g = Gamma_;
+    double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(KB/AU_eV*temp_);
     // -------------
     // Gauss profile
@@ -425,14 +388,15 @@ double WignerSolver::gauss(double k) {
  * (pseudo-)Voigt profile and supply function convolution
  * @param k wave vector at which convolution is calculated
  * @return (pseudo-)Voigt profile and supply function convolution
+ * @see https://en.wikipedia.org/wiki/Voigt_profile 
  */
 double WignerSolver::voigt(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
-    double u = k*k/m/2., g = Gamma_;
+    double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(KB/AU_eV*temp_);
     // Calculating eta - mixing parameter in pseudo-Voigt profile
-    double gammaL = 2*Gamma_, gammaG = 2*sqrt(2*log(2))*Gamma_;
+    double gammaL = 2*scG_/2., gammaG = 2*sqrt(2*log(2))*scG_/2.;
     double gamma = pow(pow(gammaG,5) +
         2.69269*pow(gammaG,4)*gammaL +
         2.42843*pow(gammaG,3)*pow(gammaL,2) +

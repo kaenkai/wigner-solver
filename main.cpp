@@ -46,8 +46,8 @@ int main(){
 	// -----------------
     // Dissipation terms
 	// -----------------
-    // f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
-    // f.set_rG(0), f.set_rF(0), f.set_lambda(0);
+    // f.set_scR(0), f.set_scM(0); // 1./(1e-12/AU_s)
+    // f.set_scG(0), f.set_scF(0), f.set_lambda(0);
 
     // --------------------------------------
     // Setting up potential bias and barriers
@@ -101,22 +101,6 @@ int main(){
     // Wigner/Boltzmann test
 	// ----------------------
     testBTE();
-
-	// --------------------------
-    // Wave packet time evolution
-    // move to a test function
-	// --------------------------
-	/*
-    f.addWavePacket(500/AU_nm, 100/AU_nm, 0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
-    f.addWavePacket(3500/AU_nm, 100/AU_nm, -0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
-    double t_total = 1000e-15/AU_s, t = 0, dt = f.get_dt();
-    while (t <= t_total) {
-        t += dt;
-        f.solveTimeEv();
-        f.saveDistFun();
-        cout<<t*AU_s*1e15<<' '<<f.calcEK()<<' '<<sqrt(f.calcEK2())<<' '<<f.calcEX()*AU_nm<<endl;
-    }
-	*/
 
     // ---------------------
     // Poisson equation test

@@ -27,36 +27,29 @@ class WignerSolver{
     double uL_ = 1;         // Fermi energy in left contact
     double epsilonR_ = 1;   // relative permittivity
     double uBias_ = 0;      // bias voltage [eV]
-    double rR_ = 0;         // scattering rate (1/tau)
-    double rM_ = 0;         // scattering rate (1/tau)
-    double rG_ = 0;         // scattering rate (1/tau)
-    double Gamma_ = 0;      // scattering rate (1/tau)
-    double rF_ = 0;         // scattering rate (1/tau)
+    double scR_ = 0;        // dissipation
+    double scM_ = 0;        // momentum randomization
+    double scG_ = 0;        // contacts scattering rate
+    double scF_ = 0;        // friction
     double lambda_ = 0;     // localization rate
     int bcType_ = 1;        // boundary condition type, 1 -> Supply function
     bool useQC_;            // whether to use quantum correction term (third derivative of potential)
 
-    arma::mat f_;       // Wigner function
-    arma::mat feq_;     // Equilibrium Wigner function
-    arma::mat f0_;      // Wigner function before time evolution
-    arma::mat fL_;      // Wigner function for el. from LEFT contact
-    arma::mat fR_;      // Wigner function for el. from RIGHT contact
-    arma::vec u_;       // Potential energy
-    arma::vec uC_;      // Hartree potential
-    arma::vec uB_;      // Conduction band offset
-    arma::vec du_;      // Potential derivative
-    arma::vec d3u_;     // Potential third derivative
-    arma::vec bc_;      // Boundary condition
-    arma::vec x_;       // Position values
-    arma::vec k_;       // Wave vector values
-    arma::mat sin_;     // Sine function values
-    arma::vec nD_;      // Doping profile
-    arma::vec currD_;   // Current density
+    arma::mat f_;           // Wigner function
+    arma::mat feq_;         // Equilibrium Wigner function
+    arma::vec u_;           // Potential energy
+    arma::vec uC_;          // Hartree potential
+    arma::vec uB_;          // Conduction band offset
+    arma::vec du_;          // Potential derivative
+    arma::vec d3u_;         // Potential third derivative
+    arma::vec bc_;          // Boundary condition
+    arma::vec x_;           // Position values
+    arma::vec k_;           // Wave vector values
+    arma::mat sin_;         // Sine function values
+    arma::vec nD_;          // Doping profile
 
-    arma::sp_mat a_;
-    arma::vec b_;
-
-    arma::vec iv_i_, iv_v_, iv_iRange_, iv_n_;
+    arma::sp_mat a_;        // Coefficient matrix for linear system
+    arma::vec b_;           // Right-hand side vector for linear system
 
 public:
 
@@ -74,9 +67,6 @@ public:
         nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
         feq_(arma::mat(nx_, nk_)),
-        f0_(arma::mat(nx_, nk_)),
-        fL_(arma::mat(nx_, nk_)),
-        fR_(arma::mat(nx_, nk_)),
         u_(arma::vec(nx_, arma::fill::zeros)),
         uC_(arma::vec(nx_, arma::fill::zeros)),
         uB_(arma::vec(nx_, arma::fill::zeros)),
@@ -87,7 +77,6 @@ public:
         k_(arma::vec(nk_, arma::fill::zeros)),
         sin_(arma::mat(nk_,nk_*nk2_)),
         nD_(arma::vec(nx_, arma::fill::zeros)),
-        currD_(arma::vec(nx_, arma::fill::zeros)),
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
@@ -121,9 +110,6 @@ public:
         nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
         feq_(arma::mat(nx_, nk_)),
-        f0_(arma::mat(nx_, nk_)),
-        fL_(arma::mat(nx_, nk_)),
-        fR_(arma::mat(nx_, nk_)),
         u_(arma::vec(nx_, arma::fill::zeros)),
         uC_(arma::vec(nx_, arma::fill::zeros)),
         uB_(arma::vec(nx_, arma::fill::zeros)),
@@ -134,7 +120,6 @@ public:
         k_(arma::vec(nk_, arma::fill::zeros)),
         sin_(arma::mat(nk_,nk_*nk2_)),
         nD_(arma::vec(nx_, arma::fill::zeros)),
-        currD_(arma::vec(nx_, arma::fill::zeros)),
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
@@ -159,6 +144,8 @@ public:
 
     ~WignerSolver(){}
 
+    // Getters
+
     size_t get_nx() { return this -> nx_; }
     size_t get_nk() { return this -> nk_; }
     double get_dk() { return this -> dk_; }
@@ -172,10 +159,10 @@ public:
     double get_uL() { return this -> uL_; }
     double get_uR() { return this -> uR_; }
     double get_dt(){ return this -> dt_; }
-    double get_rR() { return this -> rR_; }
-    double get_rM() { return this -> rM_; }
-    double get_rF() { return this -> rF_; }
-    double get_rG() { return this -> rG_; }
+    double get_scR() { return this -> scR_; }
+    double get_scM() { return this -> scM_; }
+    double get_scF() { return this -> scF_; }
+    double get_scG() { return this -> scG_; }
     double get_lambda() { return this -> lambda_; }
     arma::vec get_x() { return this -> x_; }
     arma::vec get_k() { return this -> k_; }
@@ -187,57 +174,43 @@ public:
     arma::vec get_nD() { return this -> nD_; }
     arma::vec get_bc() { return this -> bc_; }
     arma::mat get_f() { return this -> f_; }
-    arma::vec get_currD() { return this -> currD_; }
+
+    // Setters
 
     void set_m(double m) { this -> m_ = m; }
     void set_temp(double temp) { this -> temp_ = temp; }
     void set_epsilonR(double epsilonR) { this -> epsilonR_ = epsilonR; }
-
     void set_dt(double dt) { this -> dt_ = dt; }
-
-    void set_rR(double rR) { this -> rR_ = rR; }
-    void set_rM(double rM) { this -> rM_ = rM; }
-    void set_rF(double rF) { this -> rF_ = rF; }
-    void set_rG(double rG) { this -> rG_ = rG; }
+    void set_scR(double scR) { this -> scR_ = scR; }
+    void set_scM(double scM) { this -> scM_ = scM; }
+    void set_scF(double scF) { this -> scF_ = scF; }
+    void set_scG(double scG) { this -> scG_ = scG; }
     void set_lambda(double lambda) { this -> lambda_ = lambda; }
     void set_useQC(bool useQC) { this -> useQC_ = useQC; }
-
     void set_uL(double uL) { this -> uL_ = uL; }
     void set_uR(double uR) { this -> uR_ = uR; }
     void set_uBias(double uBias) { this -> uBias_ = uBias; }
-    void set_uC(arma::vec uC) { 
-        this -> uC_ = uC; 
-        this -> u_ = uB_ + uC_;
-    }
-
+    void set_uC(arma::vec uC) { this -> uC_ = uC; }
     void set_f(arma::mat f) { this -> f_ = f; }
 
     /** 
-     * Sets up doping profile
-     * @param nD - doping concentration in contacts [cm^-3]
-     * @param s - smoothing parameter (0 - rectangular profile)
-    */
+     * Sets step doping profile
+     * @param nD doping concentration in contacts (in au)
+     * @param s smoothing parameter (0 - rectangular profile, -> 1 - smoother profile)
+     * @todo move this function to WignerTools.cpp, create more complex doping profiles
+     */
     void set_doping_profile(double nD, double s = 0.01){
         for (size_t i=0; i<nx_; ++i)
             nD_(i) = nD*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
     }
 
-    double calcCurrentDensity();  // Current density
-    double calcNorm();
-    double calcEX();
-    double calcEK();
-    double calcEK2();
-    double calcSDK();
-    double calcSDX();
-    arma::vec calcCD_X();
-    arma::vec calcCD_K();
-
-    void printParam();
-    void saveDistFun();
+    // -------------------------------------
+    // Solvers for Wigner/Boltzmann equation
+    // -------------------------------------
 
     void solveBTE();
     void solveWTE();
-    void solveTimeEv();
+    void solveTimeDependentBTE();
     void solveSchrEq();
     void diffusionTerm(size_t, size_t, double);
     void driftTerm(size_t, size_t, double);
@@ -275,12 +248,27 @@ public:
     // ----------------------------
     // Functions in WignerTools.cpp
     // ----------------------------
+    double calcNorm();
+    double calcEX();
+    double calcEK();
+    double calcEX2();
+    double calcEK2();
+    double calcSDX();
+    double calcSDK();
+    arma::vec calcCD_X();           // Carrier density in x-space
+    arma::vec calcCD_K();           // Carrier density in k-space
+    arma::vec calcCurrentDensity(); // Current density according to W. R. Frensley, Phys. Rev. B 36, 1570 (1987)
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);
     void addWavePacket(double, double, double, double);
-    double wavePacket_TEV(double, double, double, double, double, double);
     double nC(double, double);
     double fermiInt(double, double);
+
+    // ------------
+    // IO functions
+    // ------------
+    void printParam();
+    void saveDistFun();
 };
 
 #endif

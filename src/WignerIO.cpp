@@ -203,18 +203,18 @@ void WignerSolver::printParam()
     cout.width(cw_v); cout<<dt_;
     cout.width(cw_v); cout<<dt_*AU_s<<'#'<<endl;
 	// ////////// Dissipation //////////
-    cout.width(cw_n); cout<<"# rR";
-    cout.width(cw_v); cout<<rR_;
-    cout.width(cw_v); cout<<rR_/AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# rM";
-    cout.width(cw_v); cout<<rM_;
-    cout.width(cw_v); cout<<rM_/AU_s<<'#'<<endl;
+    cout.width(cw_n); cout<<"# scR";
+    cout.width(cw_v); cout<<scR_;
+    cout.width(cw_v); cout<<scR_/AU_s<<'#'<<endl;
+    cout.width(cw_n); cout<<"# scM";
+    cout.width(cw_v); cout<<scM_;
+    cout.width(cw_v); cout<<scM_/AU_s<<'#'<<endl;
     cout.width(cw_n); cout<<"# lambda";
     cout.width(cw_v); cout<<lambda_;
     cout.width(cw_v); cout<<lambda_*AU_nm*AU_nm*AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# rG";
-    cout.width(cw_v); cout<<rG_;
-    cout.width(cw_v); cout<<rG_/AU_s<<'#'<<endl;
+    cout.width(cw_n); cout<<"# scG";
+    cout.width(cw_v); cout<<scG_;
+    cout.width(cw_v); cout<<scG_/AU_s<<'#'<<endl;
 	// ////////// Boundary condition //////////
     cout.width(cw_n); cout<<"# fermi_energy (left)";
     cout.width(cw_v); cout<<uL_;
