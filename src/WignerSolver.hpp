@@ -2,8 +2,8 @@
 #define WIGNERSOLVER_HPP
 
 #include "lib.hpp"
-
-using namespace AtomicUnits;
+#include <iostream>
+#include <cmath>
 
 
 /**
@@ -56,8 +56,8 @@ public:
     // Default constructor
     WignerSolver() :
         nx_ (100),
-        lD_ (60./AU_nm),
-        lC_ (20./AU_nm),
+        lD_ (60./AU::nm),
+        lC_ (20./AU::nm),
         l_ (lD_ + 2*lC_),
         dx_ (l_/float(nx_-1)),
         nk_ (100),
@@ -80,21 +80,21 @@ public:
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
-        cout<<"## Start: WignerSolver default constructor"<<endl;
+        std::cout<<"## Start: WignerSolver default constructor"<<std::endl;
         // ########## Configuration space array values ##########
-        cout<<"# Setting up configuration space array values"<<endl;
+        std::cout<<"# Setting up configuration space array values"<<std::endl;
         for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
         // ########## Wave vector space array values ##########
-        cout<<"# Setting up wave vector space array values"<<endl;
+        std::cout<<"# Setting up wave vector space array values"<<std::endl;
         for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
         // ########## NLP sinus values ##########
         // #pragma omp parallel for collapse(3)
-        cout<<"# Setting up NLP sine values"<<endl;
+        std::cout<<"# Setting up NLP sine values"<<std::endl;
         for (size_t j=0; j<nk_; ++j)
                 for (size_t g=0; g<nk_; g++)
                         for (size_t h=0; h<nk2_; h++)
                                 sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-        cout<<"## End: WignerSolver default constructor"<<endl;
+        std::cout<<"## End: WignerSolver default constructor"<<std::endl;
     }  // End of constructor
 
     WignerSolver(size_t i_nx, double i_lD, double i_lC, size_t i_nk, double i_kmax) :
@@ -105,7 +105,7 @@ public:
         dx_ (l_/float(nx_-1)),
         nk_ (i_nk),
         kmax_ (i_kmax > 0 ? i_kmax : M_PI/2./dx_),
-        dk_ (2.*kmax_/float(nk_)),
+        dk_ (2.*kmax_/float(nk_-1)),
         nk2_ (size_t(nk_/2.)),
         nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
@@ -123,23 +123,23 @@ public:
         a_(arma::sp_mat(nxk_, nxk_)),
         b_(arma::vec(nxk_, arma::fill::zeros))
         {
-        cout << "# -------------------------------" << endl;
-        cout << "# Start: WignerSolver constructor" << endl;
-        cout << "# Setting up configuration space array values" << endl;
+        std::cout << "# -------------------------------" << std::endl;
+        std::cout << "# Start: WignerSolver constructor" << std::endl;
+        std::cout << "# Setting up configuration space array values" << std::endl;
         for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
-        cout << "# Setting up wave vector space array values" << endl;
+        std::cout << "# Setting up wave vector space array values" << std::endl;
         for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
         // ----------------
         // NLP sinus values
         // ----------------
         // #pragma omp parallel for collapse(3)
-        cout << "# Setting up NLP sine values" << endl;
+        std::cout << "# Setting up NLP sine values" << std::endl;
         for (size_t j=0; j<nk_; ++j)
                 for (size_t g=0; g<nk_; g++)
                         for (size_t h=0; h<nk2_; h++)
                                 sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-        cout << "# End: WignerSolver constructor" << endl;
-        cout << "# -------------------------------\n" << endl;
+        std::cout << "# End: WignerSolver constructor" << std::endl;
+        std::cout << "# -------------------------------\n" << std::endl;
     }  // End of constructor
 
     ~WignerSolver(){}
@@ -158,6 +158,7 @@ public:
     double get_epsilonR() { return this -> epsilonR_; }
     double get_uL() { return this -> uL_; }
     double get_uR() { return this -> uR_; }
+    double get_uBias() { return this -> uBias_; }
     double get_dt(){ return this -> dt_; }
     double get_scR() { return this -> scR_; }
     double get_scM() { return this -> scM_; }
@@ -241,7 +242,7 @@ public:
 
     void normalization() {
         double f_norm = this -> calcNorm();
-        cout << "# distribution function normalization, norm: " << f_norm << endl;
+        std::cout << "# distribution function normalization, norm: " << f_norm << std::endl;
         this -> f_ /= f_norm;
     }
 

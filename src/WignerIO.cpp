@@ -1,8 +1,6 @@
 #include "lib.hpp"
 #include "WignerSolver.hpp"
 
-using namespace AtomicUnits;
-
 
 // -------------------------
 // Read parameters from file
@@ -24,7 +22,7 @@ T ReadPar(std::string str, std::string val_name, std::size_t ln){
     pp = str.substr(0, eol).find(val_name);
     if (pp!=std::string::npos){
 		    val = std::stod( str.substr(pp+val_name.size(), eol) );
-		    cout<<"found "+val_name+" at ("<<ln<<','<<pp<<") equal to "<<val<<endl;
+		    std::cout<<"found "+val_name+" at ("<<ln<<','<<pp<<") equal to "<<val<<std::endl;
 			// pp = str.find(val_name, pp+1);
 	}
     else val = -1;
@@ -76,7 +74,7 @@ std::map<std::string, double> readParameters(std::string filename){
 		    while ( getline (file,line) ){
 			    ln++;
 			    if (line[0] != '#'){
-					// cout << line << ' ' << line[0] << endl;
+					// std::cout << line << ' ' << line[0] << std::endl;
 				    tmp = ReadPar<double>(line, ival.first, ln);
 				    if (tmp != -1)
 						    val[ival.first] = tmp;
@@ -85,14 +83,14 @@ std::map<std::string, double> readParameters(std::string filename){
 		    file.clear();
 		    file.seekg (0, std::ios::beg);
 		    if (val[ival.first] == -1)
-				    cout<<ival.first+" NOT FOUND, set to default value: "<<val[ival.first]<<endl;
+				    std::cout<<ival.first+" NOT FOUND, set to default value: "<<val[ival.first]<<std::endl;
 		}
 	    file.close();
 	}
 
     if (val["max_k"]==-1){
 	    val["max_k"] = M_PI/2./(val["device_lenght"]/val["xspace_step_nr"]);
-	    cout<<"max_k NOT FOUND or EQUAL TO -1, is set to "<<val["max_k"]<<" nm^-1"<<endl;
+	    std::cout<<"max_k NOT FOUND or EQUAL TO -1, is set to "<<val["max_k"]<<" nm^-1"<<std::endl;
 	}
     return val;
 }
@@ -132,7 +130,7 @@ void WignerSolver::saveDistFun() {
     wf_out.close();
     f_.save("output/wf.bin");
     wf_out.open("output/wf.z", std::ios::out);
-    wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
+    wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU::nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
     for (size_t j=0; j<nk_; ++j){
 	    for (size_t i=0; i<nx_; ++i)
 		    wf_out<<f_(i,j)<<' ';
@@ -147,128 +145,128 @@ void WignerSolver::printParam()
 {
     int cw_n = 25, cw_v = 25;
 
-    cout << std::left;
+    std::cout << std::left;
 
-    cout<<endl;
-    cout.fill('=');
-    cout.width(cw_n+2*cw_v);
-    cout<<'#'<<'#'<<endl;
+    std::cout<<std::endl;
+    std::cout.fill('=');
+    std::cout.width(cw_n+2*cw_v);
+    std::cout<<'#'<<'#'<<std::endl;
 
-    cout.fill(' ');
+    std::cout.fill(' ');
 
-    cout.width(cw_n+2*cw_v); cout<<"# SET PARAMETERS"<<'#'<<endl;
-    cout.width(cw_n); cout<<"# Variable name";
-    cout.width(cw_v); cout<<"variable's value (a.u.)";
-    cout.width(cw_v); cout<<"variable's value (SI)"<<'#'<<endl;
+    std::cout.width(cw_n+2*cw_v); std::cout<<"# SET PARAMETERS"<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# Variable name";
+    std::cout.width(cw_v); std::cout<<"variable's value (a.u.)";
+    std::cout.width(cw_v); std::cout<<"variable's value (SI)"<<'#'<<std::endl;
 	// ////////// Effective mass //////////
-    cout.width(cw_n); cout<<"# m*";
-    cout.width(cw_v); cout<<m_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# m*";
+    std::cout.width(cw_v); std::cout<<m_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
 	// ////////// Temperature //////////
-    cout.width(cw_n); cout<<"# contact_temp_";
-    cout.width(cw_v); cout<<temp_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# contact_temp_";
+    std::cout.width(cw_v); std::cout<<temp_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
 	// ////////// Lenght //////////
-    cout.width(cw_n); cout<<"# L";
-    cout.width(cw_v); cout<<l_;
-    cout.width(cw_v); cout<<l_*AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# L_C";
-    cout.width(cw_v); cout<<lC_;
-    cout.width(cw_v); cout<<lC_*AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# L_D";
-    cout.width(cw_v); cout<<lD_;
-    cout.width(cw_v); cout<<lD_*AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# kmax";
-    cout.width(cw_v); cout<<kmax_;
-    cout.width(cw_v); cout<<kmax_/AU_nm<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# L";
+    std::cout.width(cw_v); std::cout<<l_;
+    std::cout.width(cw_v); std::cout<<l_*AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# L_C";
+    std::cout.width(cw_v); std::cout<<lC_;
+    std::cout.width(cw_v); std::cout<<lC_*AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# L_D";
+    std::cout.width(cw_v); std::cout<<lD_;
+    std::cout.width(cw_v); std::cout<<lD_*AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# kmax";
+    std::cout.width(cw_v); std::cout<<kmax_;
+    std::cout.width(cw_v); std::cout<<kmax_/AU::nm<<'#'<<std::endl;
 	// ////////// Numerical grid parameters //////////
-    cout.width(cw_n); cout<<"# Nx";
-    cout.width(cw_v); cout<<nx_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# dx";
-    cout.width(cw_v); cout<<dx_;
-    cout.width(cw_v); cout<<dx_*AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# Nk";
-    cout.width(cw_v); cout<<nk_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# dk";
-    cout.width(cw_v); cout<<dk_;
-    cout.width(cw_v); cout<<dk_/AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# dx*dk";
-    cout.width(cw_v); cout<<dx_*dk_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# Nx";
+    std::cout.width(cw_v); std::cout<<nx_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# dx";
+    std::cout.width(cw_v); std::cout<<dx_;
+    std::cout.width(cw_v); std::cout<<dx_*AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# Nk";
+    std::cout.width(cw_v); std::cout<<nk_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# dk";
+    std::cout.width(cw_v); std::cout<<dk_;
+    std::cout.width(cw_v); std::cout<<dk_/AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# dx*dk";
+    std::cout.width(cw_v); std::cout<<dx_*dk_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
 	// ////////// Time dependency parameters //////////
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# dt";
-    cout.width(cw_v); cout<<dt_;
-    cout.width(cw_v); cout<<dt_*AU_s<<'#'<<endl;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# dt";
+    std::cout.width(cw_v); std::cout<<dt_;
+    std::cout.width(cw_v); std::cout<<dt_*AU::s<<'#'<<std::endl;
 	// ////////// Dissipation //////////
-    cout.width(cw_n); cout<<"# scR";
-    cout.width(cw_v); cout<<scR_;
-    cout.width(cw_v); cout<<scR_/AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# scM";
-    cout.width(cw_v); cout<<scM_;
-    cout.width(cw_v); cout<<scM_/AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# lambda";
-    cout.width(cw_v); cout<<lambda_;
-    cout.width(cw_v); cout<<lambda_*AU_nm*AU_nm*AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# scG";
-    cout.width(cw_v); cout<<scG_;
-    cout.width(cw_v); cout<<scG_/AU_s<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# scR";
+    std::cout.width(cw_v); std::cout<<scR_;
+    std::cout.width(cw_v); std::cout<<scR_/AU::s<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# scM";
+    std::cout.width(cw_v); std::cout<<scM_;
+    std::cout.width(cw_v); std::cout<<scM_/AU::s<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# lambda";
+    std::cout.width(cw_v); std::cout<<lambda_;
+    std::cout.width(cw_v); std::cout<<lambda_*AU::nm*AU::nm*AU::s<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# scG";
+    std::cout.width(cw_v); std::cout<<scG_;
+    std::cout.width(cw_v); std::cout<<scG_/AU::s<<'#'<<std::endl;
 	// ////////// Boundary condition //////////
-    cout.width(cw_n); cout<<"# fermi_energy (left)";
-    cout.width(cw_v); cout<<uL_;
-    cout.width(cw_v); cout<<uL_*AU_eV<<'#'<<endl;
-    cout.width(cw_n); cout<<"# fermi_energy (right)";
-    cout.width(cw_v); cout<<uR_;
-    cout.width(cw_v); cout<<uR_*AU_eV<<'#'<<endl;
-    cout.width(cw_n); cout<<"# v_bias";
-    cout.width(cw_v); cout<<uBias_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
-    cout.width(cw_n); cout<<"# BC type";
-    cout.width(cw_v); cout<<bcType_;
-    cout.width(cw_v); cout<<'-'<<'#'<<endl;
+    std::cout.width(cw_n); std::cout<<"# fermi_energy (left)";
+    std::cout.width(cw_v); std::cout<<uL_;
+    std::cout.width(cw_v); std::cout<<uL_*AU::eV<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# fermi_energy (right)";
+    std::cout.width(cw_v); std::cout<<uR_;
+    std::cout.width(cw_v); std::cout<<uR_*AU::eV<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# v_bias";
+    std::cout.width(cw_v); std::cout<<uBias_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# BC type";
+    std::cout.width(cw_v); std::cout<<bcType_;
+    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
 
-    cout.fill('=');
-    cout.width(cw_n+2*cw_v);
-    cout<<'#'<<'#'<<endl;
-    cout.fill(' ');
-    cout<<endl;
+    std::cout.fill('=');
+    std::cout.width(cw_n+2*cw_v);
+    std::cout<<'#'<<'#'<<std::endl;
+    std::cout.fill(' ');
+    std::cout<<std::endl;
 
-    cout.fill('=');
-    cout.width(cw_n+2*cw_v);
-    cout<<'#'<<'#'<<endl;
-    cout.fill(' ');
+    std::cout.fill('=');
+    std::cout.width(cw_n+2*cw_v);
+    std::cout<<'#'<<'#'<<std::endl;
+    std::cout.fill(' ');
 
-    cout.width(cw_n+2*cw_v); cout<<"# SCALING PARAMETERS"<<'#'<<endl;
-    cout.width(cw_n); cout<<"# Variable name";
-    cout.width(cw_v); cout<<"variable's value (a.u.)";
-    cout.width(cw_v); cout<<"variable's value (SI)"<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_nm";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_nm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_eV";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_eV<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_s";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_s<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_A";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_A<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_cm";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_cm<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_cm^2";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_cm2<<'#'<<endl;
-    cout.width(cw_n); cout<<"# AU_cm^3";
-    cout.width(cw_v); cout<<1;
-    cout.width(cw_v); cout<<AU_cm3<<'#'<<endl;
+    std::cout.width(cw_n+2*cw_v); std::cout<<"# SCALING PARAMETERS"<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# Variable name";
+    std::cout.width(cw_v); std::cout<<"variable's value (a.u.)";
+    std::cout.width(cw_v); std::cout<<"variable's value (SI)"<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::nm";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::nm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::eV";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::eV<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::s";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::s<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::A";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::A<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::cm";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::cm<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::cm^2";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::cm2<<'#'<<std::endl;
+    std::cout.width(cw_n); std::cout<<"# AU::cm^3";
+    std::cout.width(cw_v); std::cout<<1;
+    std::cout.width(cw_v); std::cout<<AU::cm3<<'#'<<std::endl;
 
-    cout.fill('=');
-    cout.width(cw_n+2*cw_v);
-    cout<<'#'<<'#'<<endl;
-    cout.fill(' ');
-    cout<<endl;
+    std::cout.fill('=');
+    std::cout.width(cw_n+2*cw_v);
+    std::cout<<'#'<<'#'<<std::endl;
+    std::cout.fill(' ');
+    std::cout<<std::endl;
 }

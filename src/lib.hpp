@@ -1,30 +1,18 @@
 #ifndef LIB_H
 #define LIB_H
 
-#include <iostream>
-#include <cmath>
 #include <vector>
 #include <string>
-#include <ctime>
-#include <iomanip>  // std::setw
 #include <omp.h>
+
+#define ARMA_USE_SUPERLU 1
 #include <armadillo>
 
-// #define ARMA_USE_SUPERLU 1
-// #define ARMA_OPENMP_THREADS 2
-// #define ARMA_PRINT_ERRORS 1
-// #define ARMA_WARN_LEVEL 3
-// #define OMP_NUM_THREADS 2
 
-using std::cout;
-using std::endl;
-using std::setw;
-
-namespace AtomicUnits {
+namespace AU {
     // ---------
     // constants
     // ---------
-    double const PI {M_PI};
     double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
     double const KB_J {1.380649E-23};  // Boltzmann constant [J/K]
     double const E0 {1.602176634E-19};  // Elementary charge [C]
@@ -37,23 +25,19 @@ namespace AtomicUnits {
     // atomic units
     // source: https://en.wikipedia.org/wiki/Atomic_units
     // --------------------------------------------------
-    double const AU_eV {27.211386245981};  // Hartree energy [eV]
-    double const AU_nm {0.0529177210544};  // Bohr radius [nm]
-    double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
-    double const AU_m2 {AU_m*AU_m};  // [cm**2]  (AU_nm*1e-7)**2
-    double const AU_m3 {AU_m*AU_m*AU_m};  // [cm**3]  (AU_nm*1e-7)**3
-    double const AU_cm {AU_m*1e2};  // [cm]
-    double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
-    double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
-    double const AU_s {HBAR_eV/AU_eV};  // Time [s]
-    double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
-    double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
+    double const eV {27.211386245981};  // Hartree energy [eV]
+    double const nm {0.0529177210544};  // Bohr radius [nm]
+    double const m {nm*1E-9};  // Bohr radius [m]
+    double const m2 {m*m};  // [cm**2]  (nm*1e-7)**2
+    double const m3 {m*m*m};  // [cm**3]  (nm*1e-7)**3
+    double const cm {m*1e2};  // [cm]
+    double const cm2 {cm*cm};  // [cm**2]  (nm*1e-7)**2
+    double const cm3 {cm*cm*cm};  // [cm**3]  (nm*1e-7)**3
+    double const s {HBAR_eV/eV};  // Time [s]
+    double const A {E0/s};  // [A]  _e0/_tau0
+    double const Acm2 {A/cm2};  // [A/cm**2]  A/cm/cm
 }
 
-// -------------------------------
-// alias for AtomicUnits namespace
-// -------------------------------
-// namespace au = AtomicUnits;
 
 // ------------------
 // default parameters
@@ -64,6 +48,7 @@ double const M_GaAs {0.067};  // GaAs effective mass
 double const TEMP {300};
 double const DIFF {1};  // Diffusion coefficient [cm^2/s]
 double const ND {2E18};  // Donor concentration [cm^-3]
+
 
 /**
  * array class
@@ -124,6 +109,7 @@ class array {
         }
 };
 
+
 /**
  * matrix class
  * @deprecated now armadillo mat is used instead
@@ -163,109 +149,20 @@ class matrix {
 };
 
 
-/**
- * Calculate integral with step h using trapezoidal rule
- * @param f function
- * @param h (integration step
- * @return integral
- * @deprecated arma::trapz function is used
- */
-template <class T>
-double calcInt(arma::vec f, T h){
-    size_t n = f.size();
-    double ig = 0;
-    for (size_t i=1; i<n/2; ++i)
-        ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;
-    return ig;
-}
 
 
-/**
- * First derivative, second order accuracy 
- * @param f function
- * @param h differentiation step
- * @return first derivative
- */
- template <class T>
- arma::vec calcFirstDer(arma::vec f, T h){
-    size_t n = f.size();
-    arma::vec df(n, arma::fill::zeros);
-    for (size_t i=1; i<n-1; ++i)
-        df(i) = (-f(i-1)+f(i+1))/2./h;
-    df(0) = (-f(0)+f(1))/h;
-    df(n-1) = (f(n-1)-f(n-2))/h;
-    return df;
-}
+// ----------------------
+// Functions declarations
+// ----------------------
 
-
-/**
- * Second derivative, second order accuracy 
- * @param f function
- * @param h differentiation step
- * @return second derivative
- */
-template <class T>
-arma::vec calcSecondDer(arma::vec f, T h){
-    size_t n = f.size();
-    arma::vec df(n, arma::fill::zeros);
-    for (size_t i=1; i<n-1; ++i)
-        df(i) = (f(i-1)-2.*f(i)+f(i+1))/h/h;
-    df(0) = (2*f(0)-5.*f(1)+4*f(2)-f(3))/h/h;
-    df(n-1) = (2*f(n-1)-5.*f(n-2)+4*f(n-3)-f(n-4))/h/h;
-    return df;
-}
-
-
-/**
- * Third derivative, second order accuracy
- * @param f function
- * @param h differentiation step
- * @return derivative
- */
-template <class T>
-arma::vec calcThirdDer(arma::vec f, T h){
-    size_t n = f.size();
-    arma::vec df(n, arma::fill::zeros);
-    for (size_t i=2; i<n-2; ++i)
-        df(i) = (-f(i-2)+2*f(i-1)-2*f(i+1)+f(i+2))/2./h/h/h;
-    df(0) = (-f(0)+3.*f(1)-3*f(2)+f(3))/h/h/h;
-    df(1) = (-f(1)+3.*f(2)-3*f(3)+f(4))/h/h/h;
-    df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
-    df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
-    return df;
-}
-
-
-/** 
- * @brief Calculates normal distribution centered at (x_min + x_max) / 2
- * @param x_min Minimum value of x
- * @param x_max Maximum value of x
- * @param sig   Standard deviation
- * @param n     Number of points
- * @param A     Amplitude
- * @return arma::vec normal distribution
- */
-template <class T>
-arma::vec normalDistribution(T x_min = 0., T x_max = 1., T sig = 1., T A = 1., size_t n = 100){
-    arma::vec gauss(n, arma::fill::zeros);
-    double x = 0;
-    double mu = (x_min + x_max)*0.5;
-    for (size_t i = 0; i < n; ++i){
-        x = x_min + i*(x_max-x_min)/(n-1);
-        gauss(i) = exp(-(x-mu)*(x-mu)/2./sig/sig) * A;
-    }
-    return gauss;
-}
-
-
+double calcInt(arma::vec, double);
+arma::vec calcFirstDer(arma::vec, double);
+arma::vec calcSecondDer(arma::vec, double);
+arma::vec calcThirdDer(arma::vec, double);
+arma::vec normalDistribution(double, double, double, double, size_t);
 double calcFermiEn(double, double, double);
 std::map<std::string, double> readParameters(std::string);
 void saveMatGP(arma::mat, std::string);
-
-
-// -----
-// Tests
-// -----
 
 void testDerivatives();
 void testBTE();

@@ -1,13 +1,9 @@
 #include "lib.hpp"
-#include <armadillo>
 #include "WignerSolver.hpp"
-
-using namespace AtomicUnits;
 
 
 /** 
  * Solve stationary Wigner equation
- * @todo review armadillo options for sparse matrix solvers
  * @todo OpenMP parallel calculations
  */
 void WignerSolver::solveBTE() {
@@ -26,16 +22,8 @@ void WignerSolver::solveBTE() {
         }  // end j loop
     }  // end i loop
 
-    // Setting up solver options
-    // arma::superlu_opts opts;
-    // opts.symmetric = true;
-    // opts.equilibrate = false;
-    // opts.permutation = arma::superlu_opts::COLAMD;
-    // opts.refine = arma::superlu_opts::REF_EXTRA;
-    // opts.allow_ugly  = false;
-    // opts.pivot_thresh = 0;
-
     arma::vec x(nxk_, arma::fill::zeros);
+
     arma::spsolve(x, a_, b_, "superlu");
 
     f_.zeros();
@@ -127,11 +115,10 @@ void WignerSolver::solveTimeDependentBTE() {
 
 
 /**
- * Diffusion term, UDS1 rule is used
+ * Diffusion term, HDS22 rule is used
+ * HDS22 = (alpha*CDS2+beta*UDS2)/(alpha+beta)
  * @param i, j grid point indices
- * @param dt time step, if dt < 0, diffusion term is calculated for stationary Wigner equation, otherwise for time evolution
- * @todo review implementation of HDS22 scheme, check if implemented correctly and if it is stable for time dependent calculations
- * @todo implement other schemes and compare results, e.g. UDS1, UDS2
+ * @param dt time step, if dt < 0, diffusion term is stationary, time dependent otherwise
  */
 void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
@@ -160,7 +147,7 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
             a_(r, (i+2)*nk_ + j) += -beta*C;
         }
     }
-    if (k_(j) > 0.) {
+    else if (k_(j) > 0.) {
         a_(r, r) += 3.*beta*C;
         if (i == nx_-1) {
             b_(r) += -alpha*C*bc_(j);
@@ -186,26 +173,61 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
 
 
 /** 
- * Drift term, fills Boltzmann equation matrix with drift terms, central CD1 scheme is used
+ * Drift term, UDS1 is used
  * @param i, j grid point indices
- * @param dt time step, if dt <= 0 the term is stationary, otherwise time dependent
+ * @param dt time step, if dt <= 0 the term is stationary, time dependent otherwise
  * @todo implement other more complex schemes, i.e. UDS2 or HDS22
  * @todo consider other boundary condition 
  */
 void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
     double F = -du_(i);
-    double C = F/dk_/2.;
+    int alpha = 2, beta = 1;
+    double C = F/dk_/(alpha+beta)/2.;
     if (dt > 0) C *= dt/2.;
-    if (F > 0) {
-        a_(r, r) += C;
-        if (j > 0)
-            a_(r, r-1) += -C;
+    if (F < 0.) {
+        a_(r, r) += -3.*beta*C;
+        if (j == 0) {
+            // b_(r) += alpha*C*fermiDirac(-kmax_);
+            a_(r, r+1) += (alpha+4.*beta)*C;
+            a_(r, r+2) += -beta*C;
+        }
+        else if (j == nk_-1) {
+            a_(r, r-1) += -alpha*C;
+            // b_(r) += -(alpha+4.*beta)*C*fermiDirac(-kmax_) + beta*C*fermiDirac(-kmax_);
+        }
+        else if (j == nk_-2) {
+            a_(r, r-1) += -alpha*C;
+            a_(r, r+1) += (alpha+4.*beta)*C;
+            // b_(r) += beta*C*fermiDirac(-kmax_);
+        }
+        else {
+            a_(r, r-1) += -alpha*C;
+            a_(r, r+1) += (alpha+4.*beta)*C;
+            a_(r, r+2) += -beta*C;
+        }
     }
-    else if (F < 0) {
-        a_(r, r) += -C;
-        if (j < nk_-1)
-            a_(r, r+1) += C;
+    else if (F > 0.) {
+        a_(r, r) += 3.*beta*C;
+        if (j == nk_-1) {
+            // b_(r) += -alpha*C*fermiDirac(kmax_);
+            a_(r, r-1) += -(alpha+4.*beta)*C;
+            a_(r, r-2) += beta*C;
+        }
+        else if (j == 0) {
+            a_(r, r+1) += alpha*C;
+            // b_(r) += (alpha+4.*beta)*C*fermiDirac(kmax_) - beta*C*fermiDirac(kmax_);
+        }
+        else if (j == 1) {
+            a_(r, r+1) += alpha*C;
+            a_(r, r-1) += -(alpha+4.*beta)*C;
+            // b_(r) += -beta*C*fermiDirac(kmax_);
+        }
+        else {
+            a_(r, r+1) += alpha*C;
+            a_(r, r-1) += -(alpha+4.*beta)*C;
+            a_(r, r-2) += beta*C;
+        }
     }
 }
 
@@ -429,21 +451,21 @@ void WignerSolver::solveSchrEq() {
     // arma::vec ne = arma::abs(eigvec.col(0))*arma::abs(eigvec.col(0));
     //
     // Results
-    (eigval*AU_eV).brief_print("Eigenvalues [eV:");
-    // cout<<eigvec<<endl;
+    (eigval*AU::eV).brief_print("Eigenvalues [eV:");
+    // std::cout<<eigvec<<std::endl;
     // eigvec(0).print("Eigenvector(0):");
     eigvec.save( arma::csv_name("eigvec.csv") );
-    cout<<"Normalization: "<<arma::sum(eigvec.col(0))<<endl;
+    std::cout<<"Normalization: "<<arma::sum(eigvec.col(0))<<std::endl;
     arma::mat out_data;
     arma::field<std::string> header(3);
     out_data.insert_cols(0, x_), header(0) = "x [au]"; // col. 1
-    out_data.insert_cols(1, u_*AU_eV), header(1) = "U [eV]";  // col. 2
+    out_data.insert_cols(1, u_*AU::eV), header(1) = "U [eV]";  // col. 2
     out_data.insert_cols(2, eigvec.col(0)), header(2) = "Psi";  // col. 3
     out_data.save( arma::csv_name("SchrEqResults.csv", header) );
-    // cout<<eigvec(0)*eigval(0)<<A*eigvec(0)<<endl;
+    // std::cout<<eigvec(0)*eigval(0)<<A*eigvec(0)<<std::endl;
     //
     // Theory
     // double l = l_, m = m_;
     auto an_eigval = [l, m](int i) { return i*i*M_PI*M_PI/2./m/l/l; };
-    cout<<"Eigen values, theory: "<<an_eigval(1)*AU_eV<<' '<<an_eigval(2)*AU_eV<<' '<<an_eigval(3)*AU_eV<<" eV"<<endl;
+    std::cout<<"Eigen values, theory: "<<an_eigval(1)*AU::eV<<' '<<an_eigval(2)*AU::eV<<' '<<an_eigval(3)*AU::eV<<" eV"<<std::endl;
 }

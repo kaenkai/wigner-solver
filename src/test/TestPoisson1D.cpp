@@ -1,6 +1,5 @@
+#include "lib.hpp"
 #include "Poisson1D.hpp"
-
-using namespace AtomicUnits;
 
 
 /**
@@ -43,22 +42,22 @@ void Poisson1D::testUniformCharge() {
     // -------------
     // Print results
     // -------------
-    cout << "# Poisson equation test for uniform charge density" << endl;
-    cout << "# Left BC = " << p.get_dirichletL()*AU_eV
-         << ", Right BC = " << p.get_dirichletR()*AU_eV
+    std::cout << "# Poisson equation test for uniform charge density" << std::endl;
+    std::cout << "# Left BC = " << p.get_dirichletL()*AU::eV
+         << ", Right BC = " << p.get_dirichletR()*AU::eV
          << ", Grid points = " << p.get_nx() 
-         << ", Spacing = " << p.get_h() << endl;
-    cout << "# Charge = " << rho << endl;
-    cout << "x phi_num phi_an phi_err res" << endl;
+         << ", Spacing = " << p.get_h() << std::endl;
+    std::cout << "# Charge = " << rho << std::endl;
+    std::cout << "x phi_num phi_an phi_err res" << std::endl;
     for (size_t i = 1; i < nx-1; ++i) {
-        cout << i*h << '\t'
+        std::cout << i*h << '\t'
              << phi_num(i) << '\t'
              << phi_an(i) << '\t'
              << phi_err(i) << '\t'
-             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
+             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << std::endl;
     }
-    cout << "# Potential minimum (numerical): " << arma::min(phi_num) << endl;
-    cout << "# Potential minimum (analytical): " << arma::min(phi_an) << endl;
+    std::cout << "# Potential minimum (numerical): " << arma::min(phi_num) << std::endl;
+    std::cout << "# Potential minimum (analytical): " << arma::min(phi_an) << std::endl;
 }
 
 
@@ -106,21 +105,21 @@ void Poisson1D::testExponentCharge(){
     // -------------
     // Print results
     // -------------
-    cout << "# Poisson equation test for uniform charge density" << endl;
-    cout << "# Left BC = " << p.get_dirichletL()*AU_eV
-         << ", Right BC = " << p.get_dirichletR()*AU_eV
+    std::cout << "# Poisson equation test for uniform charge density" << std::endl;
+    std::cout << "# Left BC = " << p.get_dirichletL()*AU::eV
+         << ", Right BC = " << p.get_dirichletR()*AU::eV
          << ", Grid points = " << p.get_nx() 
-         << ", Spacing = " << p.get_h() << endl;
-    cout << "x phi_num phi_an phi_err res" << endl;
+         << ", Spacing = " << p.get_h() << std::endl;
+    std::cout << "x phi_num phi_an phi_err res" << std::endl;
     for (size_t i = 1; i < nx-1; ++i) {
-        cout << i*h << '\t'
+        std::cout << i*h << '\t'
              << phi_num(i) << '\t'
              << phi_an(i) << '\t'
              << phi_err(i) << '\t'
-             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
+             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << std::endl;
     }
-    cout << "# Potential minimum (numerical): " << arma::min(phi_num) << endl;
-    cout << "# Potential minimum (analytical): " << arma::min(phi_an) << endl;
+    std::cout << "# Potential minimum (numerical): " << arma::min(phi_num) << std::endl;
+    std::cout << "# Potential minimum (analytical): " << arma::min(phi_an) << std::endl;
 }
 
 
@@ -173,22 +172,22 @@ void Poisson1D::testSineCharge(){
     // -------------
     // Print results
     // -------------
-    cout << "# Poisson equation test for uniform charge density" << endl;
-    cout << "# Left BC = " << p.get_dirichletL()*AU_eV
-         << ", Right BC = " << p.get_dirichletR()*AU_eV
+    std::cout << "# Poisson equation test for uniform charge density" << std::endl;
+    std::cout << "# Left BC = " << p.get_dirichletL()*AU::eV
+         << ", Right BC = " << p.get_dirichletR()*AU::eV
          << ", Grid points = " << p.get_nx() 
-         << ", Spacing = " << p.get_h() << endl;
-    cout << "x\trho\tphi_num\tphi_an\tphi_err\tres" << endl;
+         << ", Spacing = " << p.get_h() << std::endl;
+    std::cout << "x\trho\tphi_num\tphi_an\tphi_err\tres" << std::endl;
     for (size_t i = 1; i < nx-1; ++i) {
-        cout << i*h << '\t'
+        std::cout << i*h << '\t'
              << p.rho_(i) << '\t'
              << phi_num(i) << '\t'
              << phi_an(i) << '\t'
              << phi_err(i) << '\t'
-             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << endl;
+             << (phi_num(i-1)-2*phi_num(i)+phi_num(i+1))/h/h+p.rho_(i)/epsilon << std::endl;
     }
-    cout << "# Potential norm (numerical): " << arma::norm(phi_num) << endl;
-    cout << "# Potential norm (analytical): " << arma::norm(phi_an) << endl;
+    std::cout << "# Potential norm (numerical): " << arma::norm(phi_num) << std::endl;
+    std::cout << "# Potential norm (analytical): " << arma::norm(phi_an) << std::endl;
 }
 
 
@@ -253,13 +252,13 @@ void Poisson1D::testGrid() {
         err = p.testSine();
         double ratio = err_prev / err;
         double order = std::log(ratio) / std::log(h_prev / h);
-        cout << "nx=" << nx 
+        std::cout << "nx=" << nx 
              << " h=" << p.h_ 
              << " err=" << err      // should decrease by a factor of 4 when h is halved
              << " ratio=" << ratio  // should be ~4, because error should decrease by a factor of 4 when h is halved
              << " order=" << order  // should be ~2, because the method is second-order accurate
              << " err/h^2=" << err/(h*h)
-             << endl;
+             << std::endl;
         err_prev = err;
         h_prev = h;
     }
@@ -293,11 +292,11 @@ void Poisson1D::testSelfConsistency() {
         p.rho_ = calcSecondDer(p.uNew_, h)*epsilon;
         p.solve();
         phi_num = -p.uNew_;
-        cout << "Potential p-norm: " << arma::norm(phi_num, "inf")
-             << ", solution consistency (phi_ref-phi): " << arma::norm(phi_ref - phi_num, "inf") << endl;
+        std::cout << "Potential p-norm: " << arma::norm(phi_num, "inf")
+             << ", solution consistency (phi_ref-phi): " << arma::norm(phi_ref - phi_num, "inf") << std::endl;
     }
-    cout << "Error after 100_000 iterations: " 
-         << arma::norm(phi_ref - phi_num, "inf") << endl;
+    std::cout << "Error after 100_000 iterations: " 
+         << arma::norm(phi_ref - phi_num, "inf") << std::endl;
 }
 
 
@@ -307,34 +306,34 @@ void Poisson1D::testSelfConsistency() {
  */
 void Poisson1D::testChargedPlane() {
     // Create grid from -100 to 100 nm with 1nm spacing
-    Poisson1D p(201, 1/AU_nm);
+    Poisson1D p(201, 1/AU::nm);
     
     // Set sheet charge density to -0.001 C/m^2 
-    double sigma = -1E-3 * AU_m2/E0;
+    double sigma = -1E-3 * AU::m2/AU::E0;
     
     // Place the sheet charge at x=0 (middle of grid)
     p.rho_(p.get_nx()/2) = sigma/(p.get_h());
 
     // Position grid (-100:100 nm)
-    arma::vec x = arma::linspace(-100/AU_nm, 100/AU_nm, p.get_nx());
+    arma::vec x = arma::linspace(-100/AU::nm, 100/AU::nm, p.get_nx());
     
     // Set boundary conditions:
     // At x=0nm: V = 0 
     // At x=100nm: V = -5.65 eV
-    p.set_boundary_conditions(-5.647/AU_eV, -5.647/AU_eV);
+    p.set_boundary_conditions(-5.647/AU::eV, -5.647/AU::eV);
     
     p.solve();
     arma::vec phi_num = -p.uNew_;  // convert to potential by negating uNew_
 
     // Output results
-    cout << "# Sheet charge density = " << sigma*E0/AU_m2 << " C/m^2" 
-         << ", Left BC (x = -100 nm) = " << p.get_dirichletL()*AU_eV << " eV"
-         << ", Right BC (x = +100 nm) = " << p.get_dirichletR()*AU_eV << " eV"
+    std::cout << "# Sheet charge density = " << sigma*AU::E0/AU::m2 << " C/m^2" 
+         << ", Left BC (x = -100 nm) = " << p.get_dirichletL()*AU::eV << " eV"
+         << ", Right BC (x = +100 nm) = " << p.get_dirichletR()*AU::eV << " eV"
          << ", Grid points = " << p.get_nx() 
-         << ", Spacing = " << p.get_h()*AU_nm << " nm" << endl;
+         << ", Spacing = " << p.get_h()*AU::nm << " nm" << std::endl;
     // Output x [nm], potential [eV], charge density [C/cm^3]
-    cout << "x[nm]\trho[C/cm^3]\tV[eV]" << endl;
+    std::cout << "x[nm]\trho[C/cm^3]\tV[eV]" << std::endl;
     for (size_t i = 0; i < p.get_nx(); ++i) {
-        cout << x(i)*AU_nm << '\t' << p.rho_(i)*E0/AU_cm3 << '\t' << phi_num(i)*AU_eV << endl;
+        std::cout << x(i)*AU::nm << '\t' << p.rho_(i)*AU::E0/AU::cm3 << '\t' << phi_num(i)*AU::eV << std::endl;
     }
 }

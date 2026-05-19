@@ -1,9 +1,6 @@
 #include "lib.hpp"
 #include "WignerSolver.hpp"
 #include <armadillo>
-#include <cmath>
-
-using namespace AtomicUnits;
 
 
 /**
@@ -112,7 +109,7 @@ double WignerSolver::calcEX2(){
     double norm = calcNorm();
     if (norm < 1e-12) return 0;
     arma::vec inner = arma::trapz(k_, f_, 1).as_col();
-    arma::rowvec outer = arma::trapz(x_, inner % arma::pow(x_, 2), 0);
+    arma::rowvec outer = arma::trapz(x_, inner % arma::square(x_), 0);
     return arma::as_scalar(outer)/norm;
 }
 
@@ -127,7 +124,7 @@ double WignerSolver::calcEK2(){
     double norm = calcNorm();
     if (norm < 1e-12) return 0;
     arma::rowvec inner = arma::trapz(x_, f_, 0).as_row();
-    arma::vec outer = arma::trapz(k_, inner % arma::pow(k_, 2).as_row(), 1);
+    arma::vec outer = arma::trapz(k_, inner % arma::square(k_).as_row(), 1);
     return arma::as_scalar(outer)/norm; 
 }
 
@@ -156,7 +153,7 @@ double WignerSolver::calcSDK(){
  * @param x0 position
  * @param sX width
  */
-void WignerSolver::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
+void WignerSolver::addGaussBarr(double u0 = 0.3/AU::eV, double x0 = 1000, double sX = 100) {
     for (size_t i=0; i<nx_; ++i)
         uB_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*u0;
 }
@@ -169,7 +166,7 @@ void WignerSolver::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double 
  * @param wB width
  * @param p rectangularity parameter
  */
-void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double wB = 100, double p = 10) {
+void WignerSolver::addRectBarr(double u0 = 0.3/AU::eV, double x0 = 1000, double wB = 100, double p = 10) {
     double sig = wB/2.;
     for (size_t i=0; i<nx_; ++i)
         uB_(i) += exp(-pow(x_(i)-x0, 2*p)/2./pow(sig, 2*p))*u0;
@@ -190,9 +187,9 @@ void WignerSolver::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double w
  * @see BJS habilitation thesis, p. 62, eq. (2.44)
  */
 void WignerSolver::addWavePacket(double x0, double delta_x, double k0, double delta_k) {
-    cout << "# Setting up GWP with parameters:\n"
-    << "# x0 = " << x0*AU_nm << " nm = " << x0 << " au, delta_x = " << delta_x*AU_nm << " nm = " << delta_x <<" au\n"
-    << "# k0 = " << k0 << " au, delta_k = " << delta_k << " au\n" <<endl;
+    std::cout << "# Setting up GWP with parameters:\n"
+    << "# x0 = " << x0*AU::nm << " nm = " << x0 << " au, delta_x = " << delta_x*AU::nm << " nm = " << delta_x <<" au\n"
+    << "# k0 = " << k0 << " au, delta_k = " << delta_k << " au\n" <<std::endl;
     for (size_t i=0; i<nx_; ++i) {
         for (size_t j=0; j<nk_; ++j)
             f_(i,j) += exp(
@@ -236,16 +233,16 @@ void WignerSolver::setBoundCond(int bcType){
                 for (size_t j=0; j<nk_; ++j)
                     bc_(j) = voigt(k_(j));
             else {
-                cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << endl;
-                cout << "# bcType_ = " << bcType_
-                    << " IS WRONG BOUNDARY CONDITION TYPE INT" << endl;
+                std::cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << std::endl;
+                std::cout << "# bcType_ = " << bcType_
+                    << " IS WRONG BOUNDARY CONDITION TYPE INT" << std::endl;
                 exit(0);
             }
         }
         else {
-            cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << endl;
-            cout << "# scG_ = " << scG_
-                << " SCATTERING RATE SHOULD BE GREATER THAN 0" << endl;
+            std::cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << std::endl;
+            std::cout << "# scG_ = " << scG_
+                << " SCATTERING RATE SHOULD BE GREATER THAN 0" << std::endl;
             exit(0);
         }
     }
@@ -264,7 +261,7 @@ void WignerSolver::setBoundCond(int bcType){
 double WignerSolver::supplyFunction(double k){
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
-    double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
+    double c = m/M_PI*AU::KB/AU::eV*temp_, ex = -(k*k/m/2.-mu)/(AU::KB/AU::eV*temp_);     // [au]
     if (ex < 700)
         return c * log(exp(ex)+1);
     else
@@ -291,7 +288,7 @@ double WignerSolver::gaussian(double k) {
  */
 inline double WignerSolver::sf(double mu, double energy) {
     double m = m_;
-    double c = m/M_PI*KB/AU_eV*temp_, ex = -(energy-mu)/(KB/AU_eV*temp_);     // [au]
+    double c = m/M_PI*AU::KB/AU::eV*temp_, ex = -(energy-mu)/(AU::KB/AU::eV*temp_);     // [au]
     if (ex < 700)
         return c * log(exp(ex)+1);
     else
@@ -310,7 +307,7 @@ inline double WignerSolver::sf(double mu, double energy) {
  * @see https://en.wikipedia.org/wiki/Maxwell-Boltzmann_distribution
  */
 double WignerSolver::eqFun(double mu, double energy) {
-    double kBT = KB/AU_eV*temp_;
+    double kBT = AU::KB/AU::eV*temp_;
     return bcType_ > 0 ? sf(mu, energy) : pow(2.*M_PI*kBT/m_,-1/2.) * exp(-energy/kBT);
 }
 
@@ -324,7 +321,7 @@ double WignerSolver::lorentz(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
-    double beta = 1/(KB/AU_eV*temp_);
+    double beta = 1/(AU::KB/AU::eV*temp_);
     // ---------------
     // Lorentz profile
     // ---------------
@@ -359,7 +356,7 @@ double WignerSolver::gauss(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
-    double beta = 1/(KB/AU_eV*temp_);
+    double beta = 1/(AU::KB/AU::eV*temp_);
     // -------------
     // Gauss profile
     // -------------
@@ -394,7 +391,7 @@ double WignerSolver::voigt(double k) {
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
-    double beta = 1/(KB/AU_eV*temp_);
+    double beta = 1/(AU::KB/AU::eV*temp_);
     // Calculating eta - mixing parameter in pseudo-Voigt profile
     double gammaL = 2*scG_/2., gammaG = 2*sqrt(2*log(2))*scG_/2.;
     double gamma = pow(pow(gammaG,5) +
@@ -440,7 +437,7 @@ double WignerSolver::voigt(double k) {
  * @param m electron effective mass
  * @param T temperature
  */
-inline double nC(double m, double T) { return 2.*pow(m*KB*T/AU_eV/2./M_PI, 3./2.); }  // [au]
+inline double nC(double m, double T) { return 2.*pow(m*AU::KB*T/AU::eV/2./M_PI, 3./2.); }  // [au]
 
 
 /**
@@ -493,8 +490,8 @@ double calcFermiEn(double n0, double m, double T) {
             }
         }
     }
-    eta = eta*KB*T - M_PI*M_PI*KB*T/12./eta;
-    return eta/AU_eV;
+    eta = eta*AU::KB*T - M_PI*M_PI*AU::KB*T/12./eta;
+    return eta/AU::eV;
 }
 
 
@@ -511,7 +508,7 @@ double calcFermiEn(double n0, double m, double T) {
 double WignerSolver::fermiDirac(double k){
     double mu = k > 0 ? uL_ + uBias_ : uR_;
     double m = m_;
-    double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);     // [au]
+    double ex = (k*k/m/2.-mu)/(AU::KB/AU::eV*temp_);     // [au]
     return 1./(exp(ex)+1);
 }
 
@@ -523,7 +520,96 @@ double WignerSolver::fermiDirac(double k){
  * @return Maxwell-Boltzmann distribution   value
  */
 double WignerSolver::maxwellBoltzmann(double nE,double k){
-    return nE*pow(2*M_PI*m_*KB/AU_eV*temp_, -3/2.) * 
-           exp(-k*k/2/2./(KB/AU_eV*temp_));
+    return nE*pow(2*M_PI*m_*AU::KB/AU::eV*temp_, -3/2.) * 
+           exp(-k*k/2/2./(AU::KB/AU::eV*temp_));
 }
 
+
+/** 
+ * @brief Normal distribution centered at (x_min + x_max) / 2
+ * @param x_min Minimum value of x
+ * @param x_max Maximum value of x
+ * @param sig   Standard deviation
+ * @param n     Number of points
+ * @param A     Amplitude
+ * @return arma::vec normal distribution
+ */
+arma::vec normalDistribution(double A, double sig, double x_min, double x_max, size_t n){
+    arma::vec gauss(n, arma::fill::zeros);
+    double x = 0;
+    double mu = (x_min + x_max)*0.5;
+    for (size_t i = 0; i < n; ++i){
+        x = x_min + i*(x_max-x_min)/(n-1);
+        gauss(i) = exp(-(x-mu)*(x-mu)/2./sig/sig) * A;
+    }
+    return gauss;
+}
+
+
+/**
+ * Integral with step h using trapezoidal rule
+ * @param f function
+ * @param h (integration step
+ * @return integral
+ * @deprecated arma::trapz function is used
+ */
+double calcInt(arma::vec f, double h){
+    size_t n = f.size();
+    double ig = 0;
+    for (size_t i=1; i<n/2; ++i)
+        ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;
+    return ig;
+}
+
+
+/**
+ * First derivative, second order accuracy 
+ * @param f function
+ * @param h differentiation step
+ * @return first derivative
+ */
+ arma::vec calcFirstDer(arma::vec f, double h){
+    size_t n = f.size();
+    arma::vec df(n, arma::fill::zeros);
+    for (size_t i=1; i<n-1; ++i)
+        df(i) = (-f(i-1)+f(i+1))/2./h;
+    df(0) = (-f(0)+f(1))/h;
+    df(n-1) = (f(n-1)-f(n-2))/h;
+    return df;
+}
+
+
+/**
+ * Second derivative, second order accuracy 
+ * @param f function
+ * @param h differentiation step
+ * @return second derivative
+ */
+arma::vec calcSecondDer(arma::vec f, double h){
+    size_t n = f.size();
+    arma::vec df(n, arma::fill::zeros);
+    for (size_t i=1; i<n-1; ++i)
+        df(i) = (f(i-1)-2.*f(i)+f(i+1))/h/h;
+    df(0) = (2*f(0)-5.*f(1)+4*f(2)-f(3))/h/h;
+    df(n-1) = (2*f(n-1)-5.*f(n-2)+4*f(n-3)-f(n-4))/h/h;
+    return df;
+}
+
+
+/**
+ * Third derivative, second order accuracy
+ * @param f function
+ * @param h differentiation step
+ * @return derivative
+ */
+arma::vec calcThirdDer(arma::vec f, double h){
+    size_t n = f.size();
+    arma::vec df(n, arma::fill::zeros);
+    for (size_t i=2; i<n-2; ++i)
+        df(i) = (-f(i-2)+2*f(i-1)-2*f(i+1)+f(i+2))/2./h/h/h;
+    df(0) = (-f(0)+3.*f(1)-3*f(2)+f(3))/h/h/h;
+    df(1) = (-f(1)+3.*f(2)-3*f(3)+f(4))/h/h/h;
+    df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
+    df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
+    return df;
+}
