@@ -1,6 +1,7 @@
 #include "lib.hpp"
 #include "WignerSolver.hpp"
 #include "Poisson1D.hpp"
+#include <armadillo>
 
 
 // ------------
@@ -11,6 +12,7 @@
 void testZeroPotential();
 void testWavePacket();
 void testLinearPotentialDrop();
+void testCurrentVoltageCharacteristic();
 
 
 // -----------
@@ -105,7 +107,7 @@ void testWavePacket() {
 void testLinearPotentialDrop() {
     size_t nx = 100, nk = 100;
     double lD = 2137, lC = 0;
-    double k_max = 0.1;
+    double k_max = 0.15;
     WignerSolver f(nx, lD, lC, nk, k_max);
 
     f.set_m(0.067);
@@ -113,7 +115,7 @@ void testLinearPotentialDrop() {
     f.set_epsilonR(13.1);
     f.set_uL( calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp()) );
     f.set_uR( calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp()) );
-    f.set_uBias( .1/AU::eV );
+    f.set_uBias( 1/AU::eV );
     f.setBoundCond(1);
 
     f.set_uC(
@@ -132,11 +134,37 @@ void testLinearPotentialDrop() {
     test.insert_cols(1, f.get_uC());
     test.insert_cols(2, f.calcCD_X()/AU::cm3);
     test.insert_cols(3, f.calcCurrentDensity()*AU::A/AU::cm2);
+    test.insert_cols(4, arma::min(f.get_f(), 1));
     test.save("output/test.out", arma::raw_ascii);
 
     std::cout << "Current density: " << arma::as_scalar(arma::trapz(f.get_x(), f.calcCurrentDensity()))/f.get_l()*AU::A/AU::cm2 << " A/cm^2" << std::endl;
     std::cout << "Density function max: " << f.get_f().max() << std::endl;
     std::cout << "Density function min: " << f.get_f().min() << ", min/max: " << f.get_f().min()/f.get_f().max() << std::endl;
+}
+
+
+void testCurrentVoltageCharacteristic() {
+    size_t nx = 100, nk = 100;
+    double lD = 2137, lC = 0;
+    double k_max = 0.15;
+    WignerSolver f(nx, lD, lC, nk, k_max);
+
+    f.set_m(0.067);
+    f.set_temp(300);
+    f.set_epsilonR(13.1);
+    f.set_uL( calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp()) );
+    f.set_uR( calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp()) );
+
+    for (double v: arma::linspace(0, 1, 100)) {
+        f.set_uBias( v/AU::eV );
+        f.setBoundCond(1);
+        f.solveBTE();
+        std::cout << v << '\t'
+            << arma::as_scalar(arma::trapz(
+                f.get_x(),
+                f.calcCurrentDensity()
+            ))/f.get_l() * AU::A/AU::cm2 << std::endl;
+    }
 }
 
 
@@ -147,5 +175,6 @@ void testLinearPotentialDrop() {
  void testBTE() {
     // testZeroPotential();
     // testWavePacket();
-    testLinearPotentialDrop();
+    // testLinearPotentialDrop();
+    testCurrentVoltageCharacteristic();
  }

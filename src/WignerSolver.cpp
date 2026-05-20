@@ -123,48 +123,51 @@ void WignerSolver::solveTimeDependentBTE() {
 void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
     int alpha = 2, beta = 1;
-    double C = k_(j)/m_/dx_/(alpha+beta)/2.;
-    if (dt > 0) C *= dt/2.;
+    double C = k_(j)/m_/dx_/(alpha+beta)/2. * (dt > 0 ? dt/2. : 1);
     if (k_(j) < 0.) {
-        a_(r, r) += -3.*beta*C;
         if (i == 0) {
-            b_(r) += alpha*C*bc_(j);
-            a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
-            a_(r, (i+2)*nk_ + j) += -beta*C;
+            a_(r, r)             += -3.*k_(j)/m_/dx_/2.;
+            a_(r, (i+1)*nk_ + j) += 4.*k_(j)/m_/dx_/2.;
+            a_(r, (i+2)*nk_ + j) += -k_(j)/m_/dx_/2.;
         }
         else if (i == nx_-1) {
             a_(r, (i-1)*nk_ + j) += -alpha*C;
-            b_(r) += -(alpha+4.*beta)*C*bc_(j) + beta*C*bc_(j);
+            a_(r, r)             += -3.*beta*C;
+            b_(r)                += -(alpha+3.*beta)*C*bc_(j);
         }
         else if (i == nx_-2) {
             a_(r, (i-1)*nk_ + j) += -alpha*C;
+            a_(r, r)             += -3.*beta*C;
             a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
-            b_(r) += beta*C*bc_(j);
+            b_(r)                += beta*C*bc_(j);
         }
         else {
             a_(r, (i-1)*nk_ + j) += -alpha*C;
+            a_(r, r)             += -3.*beta*C;
             a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*C;
             a_(r, (i+2)*nk_ + j) += -beta*C;
         }
     }
     else if (k_(j) > 0.) {
-        a_(r, r) += 3.*beta*C;
         if (i == nx_-1) {
-            b_(r) += -alpha*C*bc_(j);
-            a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
-            a_(r, (i-2)*nk_ + j) += beta*C;
+            a_(r, r)             += 3.*k_(j)/m_/dx_/2.;
+            a_(r, (i-1)*nk_ + j) += -4.*k_(j)/m_/dx_/2.;
+            a_(r, (i-2)*nk_ + j) += k_(j)/m_/dx_/2.;
         }
         else if (i == 0) {
             a_(r, (i+1)*nk_ + j) += alpha*C;
-            b_(r) += (alpha+4.*beta)*C*bc_(j) - beta*C*bc_(j);
+            a_(r, r)             += 3.*beta*C;
+            b_(r)                += (alpha+3.*beta)*C*bc_(j);
         }
         else if (i == 1) {
             a_(r, (i+1)*nk_ + j) += alpha*C;
+            a_(r, r)             += 3.*beta*C;
             a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
-            b_(r) += -beta*C*bc_(j);
+            b_(r)                += -beta*C*bc_(j);
         }
         else {
             a_(r, (i+1)*nk_ + j) += alpha*C;
+            a_(r, r)             += 3.*beta*C;
             a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*C;
             a_(r, (i-2)*nk_ + j) += beta*C;
         }
@@ -176,58 +179,21 @@ void WignerSolver::diffusionTerm(size_t i, size_t j, double dt) {
  * Drift term, UDS1 is used
  * @param i, j grid point indices
  * @param dt time step, if dt <= 0 the term is stationary, time dependent otherwise
- * @todo implement other more complex schemes, i.e. UDS2 or HDS22
  * @todo consider other boundary condition 
  */
 void WignerSolver::driftTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
     double F = -du_(i);
-    int alpha = 2, beta = 1;
-    double C = F/dk_/(alpha+beta)/2.;
-    if (dt > 0) C *= dt/2.;
-    if (F < 0.) {
-        a_(r, r) += -3.*beta*C;
-        if (j == 0) {
-            // b_(r) += alpha*C*fermiDirac(-kmax_);
-            a_(r, r+1) += (alpha+4.*beta)*C;
-            a_(r, r+2) += -beta*C;
-        }
-        else if (j == nk_-1) {
-            a_(r, r-1) += -alpha*C;
-            // b_(r) += -(alpha+4.*beta)*C*fermiDirac(-kmax_) + beta*C*fermiDirac(-kmax_);
-        }
-        else if (j == nk_-2) {
-            a_(r, r-1) += -alpha*C;
-            a_(r, r+1) += (alpha+4.*beta)*C;
-            // b_(r) += beta*C*fermiDirac(-kmax_);
-        }
-        else {
-            a_(r, r-1) += -alpha*C;
-            a_(r, r+1) += (alpha+4.*beta)*C;
-            a_(r, r+2) += -beta*C;
-        }
+    double C = F/dk_ * (dt > 0 ? dt/2. : 1);
+    if (F > 0) {
+        a_(r, r) += C;
+        if (j > 0)
+            a_(r, r-1) += -C;
     }
-    else if (F > 0.) {
-        a_(r, r) += 3.*beta*C;
-        if (j == nk_-1) {
-            // b_(r) += -alpha*C*fermiDirac(kmax_);
-            a_(r, r-1) += -(alpha+4.*beta)*C;
-            a_(r, r-2) += beta*C;
-        }
-        else if (j == 0) {
-            a_(r, r+1) += alpha*C;
-            // b_(r) += (alpha+4.*beta)*C*fermiDirac(kmax_) - beta*C*fermiDirac(kmax_);
-        }
-        else if (j == 1) {
-            a_(r, r+1) += alpha*C;
-            a_(r, r-1) += -(alpha+4.*beta)*C;
-            // b_(r) += -beta*C*fermiDirac(kmax_);
-        }
-        else {
-            a_(r, r+1) += alpha*C;
-            a_(r, r-1) += -(alpha+4.*beta)*C;
-            a_(r, r-2) += beta*C;
-        }
+    else if (F < 0) {
+        a_(r, r) += -C;
+        if (j < nk_-1)
+            a_(r, r+1) += C;
     }
 }
 
