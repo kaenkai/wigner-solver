@@ -11,9 +11,7 @@
  */
 class WignerSolver{
     size_t nx_;             // number of x-space grid points
-    double lD_;             // device size
-    double lC_;             // contacts size
-    double l_;              // total length
+    double l_;              // system length
     double dx_;             // x-space step size
     size_t nk_;             // number of k-space grid points
     double kmax_;           // k-space range
@@ -26,7 +24,6 @@ class WignerSolver{
     double uR_ = 1;         // Fermi energy in right contact
     double uL_ = 1;         // Fermi energy in left contact
     double epsilonR_ = 1;   // relative permittivity
-    double uBias_ = 0;      // bias voltage [eV]
     double scR_ = 0;        // dissipation
     double scM_ = 0;        // momentum randomization
     double scG_ = 0;        // contacts scattering rate
@@ -56,9 +53,7 @@ public:
     // Default constructor
     WignerSolver() :
         nx_ (100),
-        lD_ (60./AU::nm),
-        lC_ (20./AU::nm),
-        l_ (lD_ + 2*lC_),
+        l_ (100./AU::nm),
         dx_ (l_/float(nx_-1)),
         nk_ (100),
         kmax_ (M_PI/2./dx_),
@@ -97,15 +92,13 @@ public:
         std::cout<<"## End: WignerSolver default constructor"<<std::endl;
     }  // End of constructor
 
-    WignerSolver(size_t i_nx, double i_lD, double i_lC, size_t i_nk, double i_kmax) :
-        nx_ (i_nx),
-        lD_ (i_lD),
-        lC_ (i_lC),
-        l_ (lD_ + 2*lC_),
-        dx_ (l_/float(nx_-1)),
-        nk_ (i_nk),
-        kmax_ (i_kmax > 0 ? i_kmax : M_PI/2./dx_),
-        dk_ (2.*kmax_/float(nk_-1)),
+    WignerSolver(size_t nx, double l, size_t nk, double kmax) :
+        nx_ (nx),
+        l_ (l),
+        dx_ (l_/double(nx_-1)),
+        nk_ (nk),
+        kmax_ (kmax > 0 ? kmax : M_PI/2./dx_),
+        dk_ (2.*kmax_/double(nk_-1)),
         nk2_ (size_t(nk_/2.)),
         nxk_ (nx_*nk_),
         f_(arma::mat(nx_, nk_)),
@@ -151,14 +144,11 @@ public:
     double get_dk() { return this -> dk_; }
     double get_dx() { return this -> dx_; }
     double get_l() { return this -> l_; }
-    double get_lD() { return this -> lD_; }
-    double get_lC() { return this -> lC_; }
     double get_m() { return this -> m_; }
     double get_temp() { return this -> temp_; }
     double get_epsilonR() { return this -> epsilonR_; }
     double get_uL() { return this -> uL_; }
     double get_uR() { return this -> uR_; }
-    double get_uBias() { return this -> uBias_; }
     double get_dt(){ return this -> dt_; }
     double get_scR() { return this -> scR_; }
     double get_scM() { return this -> scM_; }
@@ -190,19 +180,19 @@ public:
     void set_useQC(bool useQC) { this -> useQC_ = useQC; }
     void set_uL(double uL) { this -> uL_ = uL; }
     void set_uR(double uR) { this -> uR_ = uR; }
-    void set_uBias(double uBias) { this -> uBias_ = uBias; }
     void set_uC(arma::vec uC) { this -> uC_ = uC; }
     void set_f(arma::mat f) { this -> f_ = f; }
 
     /** 
      * Sets step doping profile
      * @param nD doping concentration in contacts (in au)
+     * @param lC contact length, symmetric at each side
      * @param s smoothing parameter (0 - rectangular profile, -> 1 - smoother profile)
-     * @todo move this function to WignerTools.cpp, create more complex doping profiles
+     * @todo move this function to WignerTools.cpp, rename, create more complex doping profiles
      */
-    void set_doping_profile(double nD, double s = 0.01){
+    void setDopingProfile(double nD, double lC, double s = 0.01){
         for (size_t i=0; i<nx_; ++i)
-            nD_(i) = nD*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+            nD_(i) = nD*(1+1/(1+exp((x_(i)-lC)/s/l_))-1/(1+exp((x_(i)-l_+lC)/s/l_)));
     }
 
     // -------------------------------------

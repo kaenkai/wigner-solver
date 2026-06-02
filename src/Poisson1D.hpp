@@ -10,23 +10,17 @@ class Poisson1D {
 
         Poisson1D(size_t nx, double h) : nx_ (nx), h_ (h) {
             rho_ = arma::vec(nx_, arma::fill::zeros);
-            nE_ = arma::vec(nx_, arma::fill::zeros);
             uOld_ = arma::vec(nx_, arma::fill::zeros);
             uNew_ = arma::vec(nx_, arma::fill::zeros);
             du_ = arma::vec(nx_, arma::fill::zeros);
-            dPu_ = arma::sp_mat(nx_, nx_);
-            pFun_ = arma::vec(nx_, arma::fill::zeros);
             epsilonR_ = 1, temp_ = 300;
             dirichletL_ = 0, dirichletR_ = 0;
         }
         Poisson1D() : nx_ (100), h_ (1.) {
             rho_ = arma::vec(nx_, arma::fill::zeros);
-            nE_ = arma::vec(nx_, arma::fill::zeros);
             uOld_ = arma::vec(nx_, arma::fill::zeros);
             uNew_ = arma::vec(nx_, arma::fill::zeros);
             du_ = arma::vec(nx_, arma::fill::zeros);
-            dPu_ = arma::sp_mat(nx_, nx_);
-            pFun_ = arma::vec(nx_, arma::fill::zeros);
             epsilonR_ = 1, temp_ = 300;
             dirichletL_ = 0, dirichletR_ = 0;
         }
@@ -41,6 +35,8 @@ class Poisson1D {
         };
         void set_epsilonR(double epsilonR) {epsilonR_ = epsilonR;};
         void set_temp(double temp) {temp_ = temp;};
+        void set_uOld(arma::vec uOld) {uOld_ = uOld;};  // todo: size check
+        void set_rho(arma::vec rho) {rho_ = rho;};
 
         double get_h() {return h_;};
         size_t get_nx() {return nx_;};
@@ -50,6 +46,8 @@ class Poisson1D {
         double get_dirichletR() {return dirichletR_;};
         arma::vec get_uNew() {return uNew_;};
         arma::vec get_uOld() {return uOld_;};
+        arma::vec get_du() {return du_;};
+        arma::vec get_rho() {return rho_;};
 
         /*
         Poisson equasion tests
@@ -64,20 +62,15 @@ class Poisson1D {
 
         static void testChargedPlane();
 
-        arma::vec rho_;     // Charge density
-        arma::vec nE_;      // Electron density
-        arma::vec uOld_;    // Potential from previous iteration
-        arma::vec uNew_;    // Potential from current iteration
-        arma::vec du_;      // Potential difference between iterations
-
-        arma::vec pFun_;    // Poisson function (right-hand side of the linearized equation)
-        arma::sp_mat dPu_;  // Derivative of Poisson function with respect to potential
-
     private:
         size_t nx_;                         // number of grid points
         double h_;                          // grid step
         double dirichletL_, dirichletR_;    // Dirichlet boundary conditions
         double epsilonR_, temp_;            // relative permitivitty, temperature
+        arma::vec rho_;                     // Charge density
+        arma::vec uOld_;                    // Potential from previous iteration
+        arma::vec uNew_;                    // Potential from current iteration
+        arma::vec du_;                      // Potential difference between iterations
 };
 
 # endif

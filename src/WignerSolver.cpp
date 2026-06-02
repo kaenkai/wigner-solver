@@ -8,8 +8,8 @@
  */
 void WignerSolver::solveBTE() {
     u_ = uB_ + uC_;
-    du_ = calcFirstDer(u_, dx_);
-    d3u_ = calcThirdDer(u_, dx_);
+    du_ = movAverage(calcFirstDer(u_, dx_));
+    d3u_ = movAverage(calcThirdDer(u_, dx_));
     a_.zeros(), b_.zeros();
 
     // #pragma omp parallel for collapse(2) shared(a_, b_)
@@ -21,15 +21,19 @@ void WignerSolver::solveBTE() {
             if (useQC_) quantumCorrTerm(i, j, -1);
         }  // end j loop
     }  // end i loop
-
+    
     arma::vec x(nxk_, arma::fill::zeros);
-
+    
     arma::spsolve(x, a_, b_, "superlu");
-
+    
     f_.zeros();
     for (size_t i=0; i<nx_; ++i)
         for (size_t j=0; j<nk_; ++j)
             f_(i,j) = x(i*nk_+j);
+
+    // f_.each_row([](arma::rowvec& r){r = movAverage(r.as_col()).as_row();});
+    // f_.each_col([](arma::vec& c){c = movAverage(c);});
+    // f_ = movAverage2D(f_);
 }
 
 
@@ -40,8 +44,6 @@ void WignerSolver::solveBTE() {
  */
 void WignerSolver::solveWTE() {
     u_ = uB_ + uC_;
-    du_ = calcFirstDer(u_, dx_);
-    d3u_ = calcThirdDer(u_, dx_);
     a_.zeros(), b_.zeros();
 
     // #pragma omp parallel for collapse(2) shared(a_, b_)
@@ -52,15 +54,6 @@ void WignerSolver::solveWTE() {
             scatteringTerm(i, j, -1);
         }  // end j loop
     }  // end i loop
-
-    // Setting up solver options
-    // arma::superlu_opts opts;
-    // opts.symmetric = true;
-    // opts.equilibrate = false;
-    // opts.permutation = arma::superlu_opts::COLAMD;
-    // opts.refine = arma::superlu_opts::REF_EXTRA;
-    // opts.allow_ugly  = false;
-    // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
     arma::spsolve(x, a_, b_, "superlu");
@@ -96,14 +89,6 @@ void WignerSolver::solveTimeDependentBTE() {
             if (useQC_) quantumCorrTerm(i, j, dt_);
         }  // end j loop
     }  // end i loop
-
-    // arma::superlu_opts opts;
-    // opts.symmetric = true;
-    // opts.equilibrate = false;
-    // opts.permutation = arma::superlu_opts::COLAMD;
-    // opts.refine = arma::superlu_opts::REF_EXTRA;
-    // opts.allow_ugly  = false;
-    // opts.pivot_thresh = 0;
 
     arma::vec x(nxk_, arma::fill::zeros);
     arma::spsolve(x, a_, b_, "superlu");

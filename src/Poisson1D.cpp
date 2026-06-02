@@ -27,7 +27,6 @@ void Poisson1D::solve_tridiag() {
         if (i < nx_-1) A(i,i+1) = 1;
     }
     arma::vec d = rho_*h_*h_/epsilon;  // -rho_*h_*h_/epsilon when solving for potential
-    arma::vec x(nx_, arma::fill::zeros);  // A*x = d
 
     // ------------
     // Dirichlet BC
@@ -45,9 +44,9 @@ void Poisson1D::solve_tridiag() {
     // Solve Poisson equation
     // ----------------------s
     
+    uOld_ = uNew_;
     arma::superlu_opts settings;
     settings.symmetric = true;
-    arma::spsolve(x, A, d, "superlu", settings);
-    uNew_ = x;
+    arma::spsolve(uNew_, A, d, "superlu", settings);
     du_ = uNew_ - uOld_;
 }

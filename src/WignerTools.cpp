@@ -259,7 +259,7 @@ void WignerSolver::setBoundCond(int bcType){
  * @return supply function value
  */
 double WignerSolver::supplyFunction(double k){
-    double mu = k > 0 ? uL_ + uBias_ : uR_;
+    double mu = k > 0 ? uL_: uR_;
     double m = m_;
     double c = m/M_PI*AU::KB/AU::eV*temp_, ex = -(k*k/m/2.-mu)/(AU::KB/AU::eV*temp_);     // [au]
     if (ex < 700)
@@ -318,7 +318,7 @@ double WignerSolver::eqFun(double mu, double energy) {
  * @return Lorentzian and supply function convolution
  */
 double WignerSolver::lorentz(double k) {
-    double mu = k > 0 ? uL_ + uBias_ : uR_;
+    double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(AU::KB/AU::eV*temp_);
@@ -353,7 +353,7 @@ double WignerSolver::lorentz(double k) {
  * @return Gauss and supply function convolution
  */
 double WignerSolver::gauss(double k) {
-    double mu = k > 0 ? uL_ + uBias_ : uR_;
+    double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(AU::KB/AU::eV*temp_);
@@ -388,7 +388,7 @@ double WignerSolver::gauss(double k) {
  * @see https://en.wikipedia.org/wiki/Voigt_profile 
  */
 double WignerSolver::voigt(double k) {
-    double mu = k > 0 ? uL_ + uBias_ : uR_;
+    double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double u = k*k/m/2., g = scG_/2.;
     double beta = 1/(AU::KB/AU::eV*temp_);
@@ -506,7 +506,7 @@ double calcFermiEn(double n0, double m, double T) {
  * @param k wave vector
  */
 double WignerSolver::fermiDirac(double k){
-    double mu = k > 0 ? uL_ + uBias_ : uR_;
+    double mu = k > 0 ? uL_ : uR_;
     double m = m_;
     double ex = (k*k/m/2.-mu)/(AU::KB/AU::eV*temp_);     // [au]
     return 1./(exp(ex)+1);
@@ -600,7 +600,7 @@ arma::vec calcSecondDer(arma::vec f, double h){
  * Third derivative, second order accuracy
  * @param f function
  * @param h differentiation step
- * @return derivative
+ * @return third derivative
  */
 arma::vec calcThirdDer(arma::vec f, double h){
     size_t n = f.size();
@@ -612,4 +612,36 @@ arma::vec calcThirdDer(arma::vec f, double h){
     df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
     df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
     return df;
+}
+
+
+/**
+ * Moving average
+ */
+arma::vec movAverage(arma::vec x) {
+    size_t n = x.size();
+    arma::vec x_av(n);
+    for (size_t i=2; i<n-2; ++i)
+        x_av(i) = (x(i-2)+x(i-1)+x(i)+x(i+1)+x(i+2))/5.;
+    x_av(0) = x(0);
+    x_av(1) = (x(0)+x(1)+x(2))/3.;
+    x_av(n-2) = (x(n-1)+x(n-2)+x(n-3))/3.;
+    x_av(n-1) = x(n-1);
+    return x_av;
+}
+
+/**
+ * Moving average
+ */
+arma::mat movAverage2D(arma::mat x) {
+    size_t nr = x.n_rows, nc = x.n_cols;
+    arma::mat x_av = arma::mat(x);
+    for (size_t r=1; r<nr-1; ++r)
+        for (size_t c=1; c<nc-1; ++c)       
+            x_av(r, c) = (
+                x(r+1, c-1) + x(r+1, c) + x(r+1, c+1) +
+                x(r, c-1)   + x(r, c)   + x(r, c+1) +
+                x(r-1, c-1) + x(r-1, c) + x(r-1, c+1)
+            )/9.;
+    return x_av;
 }

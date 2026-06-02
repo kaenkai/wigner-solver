@@ -155,6 +155,9 @@ class matrix {
 // Functions declarations
 // ----------------------
 
+
+arma::vec movAverage(arma::vec);
+arma::mat movAverage2D(arma::mat);
 double calcInt(arma::vec, double);
 arma::vec calcFirstDer(arma::vec, double);
 arma::vec calcSecondDer(arma::vec, double);
@@ -164,8 +167,7 @@ double calcFermiEn(double, double, double);
 std::map<std::string, double> readParameters(std::string);
 void saveMatGP(arma::mat, std::string);
 
-void testDerivatives();
 void testBTE();
-
+void testBoltzmannPoisson();
 
 #endif

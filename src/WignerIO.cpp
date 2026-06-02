@@ -170,12 +170,6 @@ void WignerSolver::printParam()
     std::cout.width(cw_n); std::cout<<"# L";
     std::cout.width(cw_v); std::cout<<l_;
     std::cout.width(cw_v); std::cout<<l_*AU::nm<<'#'<<std::endl;
-    std::cout.width(cw_n); std::cout<<"# L_C";
-    std::cout.width(cw_v); std::cout<<lC_;
-    std::cout.width(cw_v); std::cout<<lC_*AU::nm<<'#'<<std::endl;
-    std::cout.width(cw_n); std::cout<<"# L_D";
-    std::cout.width(cw_v); std::cout<<lD_;
-    std::cout.width(cw_v); std::cout<<lD_*AU::nm<<'#'<<std::endl;
     std::cout.width(cw_n); std::cout<<"# kmax";
     std::cout.width(cw_v); std::cout<<kmax_;
     std::cout.width(cw_v); std::cout<<kmax_/AU::nm<<'#'<<std::endl;
@@ -220,9 +214,6 @@ void WignerSolver::printParam()
     std::cout.width(cw_n); std::cout<<"# fermi_energy (right)";
     std::cout.width(cw_v); std::cout<<uR_;
     std::cout.width(cw_v); std::cout<<uR_*AU::eV<<'#'<<std::endl;
-    std::cout.width(cw_n); std::cout<<"# v_bias";
-    std::cout.width(cw_v); std::cout<<uBias_;
-    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
     std::cout.width(cw_n); std::cout<<"# BC type";
     std::cout.width(cw_v); std::cout<<bcType_;
     std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
