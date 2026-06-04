@@ -15,7 +15,7 @@ Program for solving Boltzmann-Poisson (classical) and Wigner-Poisson (quantum) e
 
 ## Usage
 
-* To run the program, use the following command: `./run.out`.
+* To run the program, use the following command: `./run`.
 * The system parameters are set throug the `main.cpp` file.
 
 ## Dependencies

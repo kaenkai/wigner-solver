@@ -120,6 +120,9 @@ void saveMatGP(arma::mat data, std::string filename) {
  * Saves Distribution function to wf.out, wf.bin, and wf.z (GLE format) files
  */
 void WignerSolver::saveDistFun() {
+    // --------------------------------
+    // Gnuplot format (3 columns x y z)
+    // --------------------------------
     std::ofstream wf_out("output/wf.out");
     wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
     for (size_t i=0; i<nx_; ++i){
@@ -128,7 +131,13 @@ void WignerSolver::saveDistFun() {
 	    wf_out<<"\n";
 	}
     wf_out.close();
+    // -----------
+    // Binary file
+    // -----------
     f_.save("output/wf.bin");
+    // -------------------
+    // GLE *.z file format
+    // -------------------
     wf_out.open("output/wf.z", std::ios::out);
     wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU::nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
     for (size_t j=0; j<nk_; ++j){
@@ -189,11 +198,6 @@ void WignerSolver::printParam()
     std::cout.width(cw_n); std::cout<<"# dx*dk";
     std::cout.width(cw_v); std::cout<<dx_*dk_;
     std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
-	// ////////// Time dependency parameters //////////
-    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
-    std::cout.width(cw_n); std::cout<<"# dt";
-    std::cout.width(cw_v); std::cout<<dt_;
-    std::cout.width(cw_v); std::cout<<dt_*AU::s<<'#'<<std::endl;
 	// ////////// Dissipation //////////
     std::cout.width(cw_n); std::cout<<"# scR";
     std::cout.width(cw_v); std::cout<<scR_;
@@ -214,9 +218,6 @@ void WignerSolver::printParam()
     std::cout.width(cw_n); std::cout<<"# fermi_energy (right)";
     std::cout.width(cw_v); std::cout<<uR_;
     std::cout.width(cw_v); std::cout<<uR_*AU::eV<<'#'<<std::endl;
-    std::cout.width(cw_n); std::cout<<"# BC type";
-    std::cout.width(cw_v); std::cout<<bcType_;
-    std::cout.width(cw_v); std::cout<<'-'<<'#'<<std::endl;
 
     std::cout.fill('=');
     std::cout.width(cw_n+2*cw_v);

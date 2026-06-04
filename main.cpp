@@ -10,8 +10,8 @@ int main(){
     // ----------------------
     // Wigner/Boltzmann test
 	// ----------------------
-    // testBTE();
-    testBoltzmannPoisson();
+    testBTE();
+    // testBoltzmannPoisson();
 
     // ---------------------------
     // Evaluating calculation time

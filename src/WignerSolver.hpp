@@ -18,7 +18,6 @@ class WignerSolver{
     double dk_;             // k-space step size
     size_t nk2_;            // nk_ / 2
     size_t nxk_;            // nx_ * nk_
-    double dt_ = 0;         // time step
     double m_ = 1;          // effective mass in the device
     double temp_ = 300;     // contacts temperature [K]
     double uR_ = 1;         // Fermi energy in right contact
@@ -29,7 +28,6 @@ class WignerSolver{
     double scG_ = 0;        // contacts scattering rate
     double scF_ = 0;        // friction
     double lambda_ = 0;     // localization rate
-    int bcType_ = 1;        // boundary condition type, 1 -> Supply function
     bool useQC_;            // whether to use quantum correction term (third derivative of potential)
 
     arma::mat f_;           // Wigner function
@@ -49,6 +47,9 @@ class WignerSolver{
     arma::vec b_;           // Right-hand side vector for linear system
 
 public:
+
+    // Type alias
+    using WignerProfile = double (WignerSolver::*)(double);
 
     // Default constructor
     WignerSolver() :
@@ -149,7 +150,6 @@ public:
     double get_epsilonR() { return this -> epsilonR_; }
     double get_uL() { return this -> uL_; }
     double get_uR() { return this -> uR_; }
-    double get_dt(){ return this -> dt_; }
     double get_scR() { return this -> scR_; }
     double get_scM() { return this -> scM_; }
     double get_scF() { return this -> scF_; }
@@ -171,11 +171,9 @@ public:
     void set_m(double m) { this -> m_ = m; }
     void set_temp(double temp) { this -> temp_ = temp; }
     void set_epsilonR(double epsilonR) { this -> epsilonR_ = epsilonR; }
-    void set_dt(double dt) { this -> dt_ = dt; }
     void set_scR(double scR) { this -> scR_ = scR; }
     void set_scM(double scM) { this -> scM_ = scM; }
     void set_scF(double scF) { this -> scF_ = scF; }
-    void set_scG(double scG) { this -> scG_ = scG; }
     void set_lambda(double lambda) { this -> lambda_ = lambda; }
     void set_useQC(bool useQC) { this -> useQC_ = useQC; }
     void set_uL(double uL) { this -> uL_ = uL; }
@@ -201,7 +199,7 @@ public:
 
     void solveBTE();
     void solveWTE();
-    void solveTimeDependentBTE();
+    void solveTimeDependentBTE(double);
     void solveSchrEq();
     void diffusionTerm(size_t, size_t, double);
     void driftTerm(size_t, size_t, double);
@@ -213,16 +211,13 @@ public:
     // Boundary conditions
     // -------------------
     
-    void setBoundCond(int);                     // Boundary conditions
-    double fermiDirac(double);                  // Fermi-Dirac distribution
-    double supplyFunction(double);              // Supply function as function of wave vector
-    double sf(double, double);                  // Supply function as function of energy (used for convolution with Lorentz/Gauss/Voigt profiles)
-    double maxwellBoltzmann(double, double);
-    double gaussian(double);
-    double eqFun(double, double);
-    double lorentz(double);                     // Lorentzian profile
-    double gauss(double);                       // Gaussian profile
-    double voigt(double);                       // (pseudo-)Voigt profile
+    void setBoundaryConditions(int = 0, double=0);          // Set boundary conditions
+    double supplyFunction(double);                          // Supply function as function of wave vector
+    double eqFun(double, double);                           // Equilibrium function
+    double lorentz(double);                                 // Lorentzian profile
+    double gauss(double);                                   // Gaussian profile
+    double voigt(double);                                   // (pseudo-)Voigt profile
+    double conv(WignerProfile, double);                     // Convolution
 
     /** 
     * Sets up equilibrium function
@@ -246,14 +241,16 @@ public:
     double calcEK2();
     double calcSDX();
     double calcSDK();
-    arma::vec calcCD_X();           // Carrier density in x-space
-    arma::vec calcCD_K();           // Carrier density in k-space
-    arma::vec calcCurrentDensity(); // Current density according to W. R. Frensley, Phys. Rev. B 36, 1570 (1987)
+    arma::vec calcCD_X();                                   // Carrier density in x-space
+    arma::vec calcCD_K();                                   // Carrier density in k-space
+    arma::vec calcCurrentDensity();                         // Current density
     void addGaussBarr(double, double, double);
     void addRectBarr(double, double, double, double);
     void addWavePacket(double, double, double, double);
     double nC(double, double);
     double fermiInt(double, double);
+    double fermiDirac(double);                              // Fermi-Dirac distribution
+    double maxwellBoltzmann(double, double);                // Maxwell-Boltzmann distribution
 
     // ------------
     // IO functions

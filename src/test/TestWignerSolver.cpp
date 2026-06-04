@@ -15,6 +15,7 @@ void testWavePacket();
 void testLinearPotentialDrop();
 void testCurrentVoltageCharacteristic();
 void testSingleBarrier();
+void testRTD();
 
 
 // -----------
@@ -47,14 +48,13 @@ void testZeroPotential() {
     f.set_uL( muF + 0./AU::eV );
     f.set_uR( muF );
 
-    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Boundary conditions
     // 0 -> 0 (closed system, no carrier inflow)
 	// 1 -> Supply function, 2:4 -> Supply function convolution
-	// -1 -> Gaussian, -2:-4 -> Gauss function convolution
-    // where convolution is with Lorentzian (2, -2), Gaussian (3, -3) or Voigt (4, -4) profile
-	// ---------------------------------------------------------------------------------------
-    f.setBoundCond(1);
+    // where convolution is with Lorentzian (2), Gaussian (3) or Voigt (4) profile
+	// ---------------------------------------------------------------------------
+    f.setBoundaryConditions(1);
 
     f.solveBTE();
     f.saveDistFun();
@@ -64,15 +64,24 @@ void testZeroPotential() {
     cdX_test.insert_cols(0, f.get_x());
     cdX_test.insert_cols(1, cdX/AU::cm3);
     cdX_test.insert_cols(2, f.calcCurrentDensity()*AU::A/AU::cm2);
-    cdX_test.save("output/cdX_test.out", arma::raw_ascii);
+    cdX_test.save("output/cdX_test.tmp", arma::raw_ascii);
 
     arma::vec cdK = f.calcCD_K();
     arma::mat cdK_test;
     cdK_test.insert_cols(0, f.get_k());
     cdK_test.insert_cols(1, f.get_bc());
-    cdK_test.insert_cols(2, cdK);
-    cdK_test.insert_cols(3, f.get_bc()-cdK/f.get_l());
-    cdK_test.save("output/cdK_test.out", arma::raw_ascii);
+    cdK_test.insert_cols(2, cdK/f.get_l());
+
+    f.setBoundaryConditions(2, 1./(1e-12/AU::s));
+    cdK_test.insert_cols(3, f.get_bc());
+
+    f.setBoundaryConditions(3, 1./(1e-12/AU::s));
+    cdK_test.insert_cols(4, f.get_bc());
+
+    f.setBoundaryConditions(4, 1./(1e-12/AU::s));
+    cdK_test.insert_cols(5, f.get_bc());
+
+    cdK_test.save("output/cdK_test.tmp", arma::raw_ascii);
 
     std::cout << "# Distribution function expected value in X: " << f.calcEX() << std::endl;
     std::cout << "# Distribution function expected value in K: " << f.calcEK() << std::endl;
@@ -83,7 +92,7 @@ void testZeroPotential() {
 
 
 void testWavePacket() {
-    size_t nx = 150, nk = 100;
+    size_t nx = 80, nk = 80;
     double l = 2137;
     double k_max = 0.1;
     WignerSolver f(nx, l, nk, k_max);
@@ -92,7 +101,7 @@ void testWavePacket() {
     f.set_temp(300);
     f.set_epsilonR(13.1);
 
-    f.setBoundCond(0);
+    f.setBoundaryConditions(0);
     arma::vec gwp_params = {666.666, 67., 0.049, 0.00411}; 
     f.addWavePacket(gwp_params(0), gwp_params(1), gwp_params(2), gwp_params(3));
     double gwp_center = gwp_params(0);
@@ -102,14 +111,16 @@ void testWavePacket() {
     std::cout << "# k-space: " << f.calcEK() << ", " << f.calcSDK() << std::endl;
     std::cout << "# GWP normalization: " << f.calcNorm() << std::endl << std::endl;
     
-    f.set_dt(.1E-15/AU::s);
+    double dt = .5E-15/AU::s;
+    std::cout << "# Courant–Friedrichs–Lewy (CFL) condition: " << dt/f.get_dx()*k_max/f.get_m() << std::endl;
+
     double t = 0, t_total = 3E-14/AU::s;
     std::cout << "# t\tE[x]\tE[k]\tSD[x]\tSD[k]\tE[x]_an\tN\tJ" << std::endl;
     std::cout << "# fs\tau\tau\tau\tau\tau\tau\tau" << std::endl;
-    while (t <= t_total) {
-        t += f.get_dt();
-        f.solveTimeDependentBTE();
-        gwp_center += gwp_params(2)/f.get_m()*f.get_dt() ;
+    while (t < t_total) {
+        t += dt;
+        f.solveTimeDependentBTE(dt);
+        gwp_center += gwp_params(2)/f.get_m()*dt ;
         std::cout << t*AU::s*1e15 << '\t'
              << f.calcEX() << '\t' << f.calcEK() << '\t'
              << f.calcSDX() << '\t' << f.calcSDK() << '\t'
@@ -135,7 +146,7 @@ void testLinearPotentialDrop() {
     double muF = calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp());
     f.set_uL( muF + 0./AU::eV );
     f.set_uR( muF );
-    f.setBoundCond(1);
+    f.setBoundaryConditions(1);
 
     f.set_uC( arma::linspace(f.get_uL(), f.get_uR(), f.get_nx()) );
 
@@ -148,7 +159,7 @@ void testLinearPotentialDrop() {
     test.insert_cols(2, f.calcCD_X()/AU::cm3);
     test.insert_cols(3, f.calcCurrentDensity()*AU::A/AU::cm2);
     test.insert_cols(4, arma::min(f.get_f(), 1));
-    test.save("output/test.out", arma::raw_ascii);
+    test.save("output/test.tmp", arma::raw_ascii);
 
     std::cout << "Current density: " << arma::as_scalar(arma::trapz(f.get_x(), f.calcCurrentDensity()))/f.get_l()*AU::A/AU::cm2 << " A/cm^2" << std::endl;
     std::cout << "Density function max: " << f.get_f().max() << std::endl;
@@ -171,7 +182,7 @@ void testCurrentVoltageCharacteristic() {
 
     for (double v: arma::linspace(0, 1, 100)) {
         f.set_uL( muF + v/AU::eV );
-        f.setBoundCond(1);
+        f.setBoundaryConditions(1);
         f.solveBTE();
         std::cout << v << '\t'
             << arma::as_scalar(arma::trapz(
@@ -183,7 +194,7 @@ void testCurrentVoltageCharacteristic() {
 
 
 void testSingleBarrier() {
-    size_t nx = 89, nk = 89;
+    size_t nx = 88, nk = 88;
     double l = 2137;
     double k_max = 0.15;
     WignerSolver f(nx, l, nk, k_max);
@@ -195,7 +206,7 @@ void testSingleBarrier() {
     double muF = calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp());
     f.set_uL( muF + 0./AU::eV );
     f.set_uR( muF );
-    f.setBoundCond(1);
+    f.setBoundaryConditions(1);
 
     f.set_uC(
         arma::linspace(
@@ -225,11 +236,63 @@ void testSingleBarrier() {
     test.insert_cols(5, f.get_du());
     test.insert_cols(6, calcFirstDer(f.get_u(), f.get_dx()));
     // test.insert_cols(7, arma::conv(du, kernel, "same"));
-    test.save("output/test.out", arma::raw_ascii);
+    test.save("output/test.tmp", arma::raw_ascii);
 
     std::cout << "Current density: " << arma::as_scalar(arma::trapz(f.get_x(), f.calcCurrentDensity()))/f.get_l()*AU::A/AU::cm2 << " A/cm^2" << std::endl;
     std::cout << "Density function max: " << f.get_f().max() << std::endl;
     std::cout << "Density function min: " << f.get_f().min() << ", min/max: " << f.get_f().min()/f.get_f().max() << std::endl;
+}
+
+
+void testRTD() {
+    size_t nx = 80, nk = 80;
+    double l = 75/AU::nm;
+    double k_max = 0.15;
+    WignerSolver f(nx, l, nk, k_max);
+
+    f.set_m(0.067);
+    f.set_temp(300);
+    f.set_epsilonR(13.1);
+
+    // double muF = calcFermiEn(2E18*AU::cm3, f.get_m(), f.get_temp());
+    double muF = 86E-3/AU::eV, uBias = 500E-3/AU::eV;
+    f.set_uL( muF + uBias );
+    f.set_uR( muF );
+    f.setBoundaryConditions(1);
+
+    double activeRegion = (2*2.8+4.5+2*2.8)/AU::nm;
+    double lead = (l-activeRegion)/2.;
+    arma::vec x = f.get_x();
+    arma::vec potentialProfile(nx);
+
+    f.addRectBarr(0.27/AU::eV, lead+2.8/AU::nm+1.4/AU::nm, 2.8/AU::nm, 2);
+    f.addRectBarr(0.27/AU::eV, lead+activeRegion-2.8/AU::nm-1.4/AU::nm, 2.8/AU::nm, 2);
+
+    for (auto v: arma::linspace(0, 0.5/AU::eV, 100)) {
+        f.set_uL( muF + v );
+        for (size_t i=0; i < nx; ++i) {
+            if (x(i)<lead) potentialProfile(i) = f.get_uL();
+            else if (x(i)>lead+activeRegion)  potentialProfile(i) = f.get_uR();
+            else potentialProfile(i) = f.get_uL()*(1-(x(i)-lead)/activeRegion)+f.get_uR()*(x(i)-lead)/activeRegion;
+        }
+        f.set_uC(potentialProfile);
+        f.solveWTE();
+        std::cout << v*AU::eV << '\t' << arma::sum(f.calcCurrentDensity())/f.get_l()*AU::A << std::endl;
+    }
+
+
+    f.saveDistFun();
+
+    arma::mat test;
+    test.insert_cols(0, x*AU::nm);
+    test.insert_cols(1, (f.get_uC()+f.get_uB())*AU::eV);
+    test.insert_cols(2, f.calcCD_X()/AU::cm3);
+    test.insert_cols(3, f.calcCurrentDensity()*AU::A/AU::cm2);
+    test.save("output/test.tmp", arma::raw_ascii);
+
+    std::cout << "# Current density: " << arma::sum(f.calcCurrentDensity())/f.get_l()*AU::A << " A" << std::endl;
+    std::cout << "# Density function max: " << f.get_f().max() << std::endl;
+    std::cout << "# Density function min: " << f.get_f().min() << ", min/max: " << f.get_f().min()/f.get_f().max() << std::endl;
 }
 
 
@@ -242,7 +305,8 @@ void testSingleBarrier() {
     // testWavePacket();
     // testLinearPotentialDrop();
     // testCurrentVoltageCharacteristic();
-    testSingleBarrier();
+    // testSingleBarrier();
+    testRTD();
  }
 
 
@@ -265,7 +329,7 @@ void testBoltzmannPoisson() {
     double uBias = 0.2/AU::eV;
     f.set_uL( muF + uBias );
     f.set_uR( muF );
-    f.setBoundCond(1);
+    f.setBoundaryConditions(1);
 
     f.setDopingProfile(2e18*AU::cm3, 20/AU::nm, 0.02);
     // f.addRectBarr(0.2/AU::eV, 50/AU::nm, 5/AU::nm, 2);
@@ -276,10 +340,8 @@ void testBoltzmannPoisson() {
 
     double mx = 1;
     double dt = .2E-15/AU::s;
-    f.set_dt(dt);
 
-    double cfl = f.get_dt()/f.get_dx()*k_max/f.get_m();
-    std::cout << "# Courant–Friedrichs–Lewy (CFL) condition: " << cfl << std::endl;
+    std::cout << "# Courant–Friedrichs–Lewy (CFL) condition: " << dt/f.get_dx()*k_max/f.get_m() << std::endl;
 
     size_t veryImportantCounter = 0;
     double maxPotChange;
@@ -289,7 +351,7 @@ void testBoltzmannPoisson() {
         p.solve();
         f.set_uC( p.get_uNew() );
         // f.solveBTE();
-        f.solveTimeDependentBTE();
+        f.solveTimeDependentBTE(dt);
         newRho = p.get_rho()*(1-mx) + (f.get_nD()-f.calcCD_X())*mx;
         maxPotChange = arma::abs(p.get_du()).max();
         std::cout 
@@ -299,7 +361,7 @@ void testBoltzmannPoisson() {
             << f.calcNorm() << '\t'
             << maxPotChange << std::endl;
         // right now the criterion is that max potential change has to be lower than 1e-7 eV  
-        veryImportantCounter += maxPotChange < 1e-8 ? 1 : 0;
+        veryImportantCounter += maxPotChange < 1e-6 ? 1 : 0;
         if (veryImportantCounter > 9) break;
     }
 
@@ -313,7 +375,7 @@ void testBoltzmannPoisson() {
     test.insert_cols(3, f.get_nD()/AU::cm3);
     test.insert_cols(4, f.calcCD_X()/AU::cm3);
     test.insert_cols(5, (f.calcCurrentDensity())*AU::A/AU::cm2);
-    test.save("output/test.out", arma::raw_ascii);
+    test.save("output/test.tmp", arma::raw_ascii);
 
     f.saveDistFun();
 }

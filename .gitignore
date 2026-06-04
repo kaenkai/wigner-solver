@@ -47,7 +47,7 @@
 *.bin
 *.z
 *.txt
-out
+run
 
 # Input files
 *.in

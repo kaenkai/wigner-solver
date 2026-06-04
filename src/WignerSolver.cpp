@@ -71,7 +71,7 @@ void WignerSolver::solveWTE() {
  * @todo move solution to solveBTE() and solveWTE()
  * @deprecated this function is not used anymore
  */
-void WignerSolver::solveTimeDependentBTE() {
+void WignerSolver::solveTimeDependentBTE(double dt) {
     // setEquilibriumFunction();
     u_ = uB_ + uC_;
     du_ = calcFirstDer(u_, dx_);
@@ -82,11 +82,11 @@ void WignerSolver::solveTimeDependentBTE() {
     for (size_t i=nx_; i--;) {
         for (size_t j=nk_; j--;) {
             a_(i*nk_+j, i*nk_+j) += 1.;
-            b_(i*nk_+j) = 2.*f_(i, j);
-            diffusionTerm(i, j, dt_);
-            driftTerm(i, j, dt_);
-            scatteringTerm(i, j, dt_);
-            if (useQC_) quantumCorrTerm(i, j, dt_);
+            b_(i*nk_+j) = 2*f_(i, j);
+            diffusionTerm(i, j, dt);
+            driftTerm(i, j, dt);
+            scatteringTerm(i, j, dt);
+            if (useQC_) quantumCorrTerm(i, j, dt);
         }  // end j loop
     }  // end i loop
 
@@ -224,117 +224,39 @@ void WignerSolver::nonLocalPotentialTerm(size_t i, size_t j) {
 /// Scattering term
 void WignerSolver::scatteringTerm(size_t i, size_t j, double dt) {
     size_t r = i*nk_ + j;
-    double cR = scR_, cM = scM_, cL = lambda_/dk_/dk_;
-    if (dt > 0) cR *= dt/2., cM *= dt/2., cL *= dt/2.;
+    double C;
     // #################### scR term ####################
-    a_(r, r) += cR;
-    b_(r) += feq_(i, j)*cR;
+    C = scR_ * (dt > 0 ? dt/2. : 1);
+    a_(r, r) += C;
+    b_(r) += feq_(i, j)*C;
     // #################### scM term ####################
-    a_(r, r) += cM;
-    a_(r, i*nk_+(nk_-j-1)) += -cM;
+    C = scM_ * (dt > 0 ? dt/2. : 1);
+    a_(r, r) += C;
+    a_(r, i*nk_+(nk_-j-1)) += -C;
     // #################### Lambda term ####################
-    a_(r, r) += 2*cL;
+    C = lambda_/dk_/dk_ * (dt > 0 ? dt/2. : 1);
+    a_(r, r) += 2*C;
     if (j==0)
-        a_(r, r+1) += -cL;
+        a_(r, r+1) += -C;
     else if (j==nk_-1)
-        a_(r, r-1) += -cL;
+        a_(r, r-1) += -C;
     else{
-        a_(r, r-1) += -cL;
-        a_(r, r+1) += -cL;
+        a_(r, r-1) += -C;
+        a_(r, r+1) += -C;
     }
     // #################### gamma term ####################
-    double C = -scF_;
-    if (dt > 0) C *= dt/2.;
+    C = -scF_ * k_(j)/dk_ * (dt > 0 ? -dt/2. : 1);
     double F = -du_(i);  // classical force equal to -du/dx
-    // UDS1
-    // C *= k_(j)/dk_;
-    // a_(r,r) += C;
-    // if (F > 0){
-    //     if (j == 0)
-    //         a_(r, r) += C;
-    //     else{
-    //         a_(r, r) += C;
-    //         a_(r, r-1) += -C;
-    //     }
-    // }
-    // else if (F <= 0){
-    //     if (j == nk_-1)
-    //         a_(r, r) += -C;
-    //     else{
-    //         a_(r, r) += -C;
-    //         a_(r, r+1) += C;
-    //     }
-    // }
-    // HDS22
-    C *= k_(j)/dk_;
     a_(r,r) += C;
-    double alpha = 2., beta = 1.;
-    double D = C/(alpha+beta);
-    if (F <= 0) {
-        if (j==0) {
-            b_(r) += fermiDirac(kmax_)*alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            a_(r, r+2) += -beta*D;
-            // a_(r, r) += -3.*C;
-            // a_(r, r+1) += 4.*C;
-            // a_(r, r+2) += -C;
-        }
-        else if (j==nk_-1) {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            b_(r) += -fermiDirac(kmax_)*(alpha+3.*beta)*D;
-            // a_(r, r) += -3.*C;
-            // b_(r) += -3.*fermiDirac(kmax_)*C;
-        }
-        else if (j==nk_-2) {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            b_(r) += fermiDirac(kmax_)*beta*D;
-            // a_(r, r) += -3.*C;
-            // a_(r, r+1) += 4.*C;
-            // b_(r) += fermiDirac(kmax_)*C;
-        }
-        else {
-            a_(r, r-1) += -alpha*D;
-            a_(r, r) += -3.*beta*D;
-            a_(r, r+1) += (alpha+4.*beta)*D;
-            a_(r, r+2) += -beta*D;
-        }
+    if (F > 0) {
+        a_(r, r) += C;
+        if (j > 0)
+            a_(r, r-1) += -C;
     }
-    else if (F > 0) {
-        if (j==nk_-1) {
-            b_(r) += -fermiDirac(-kmax_)*alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            a_(r, r-2) += beta*D;
-            // a_(r, r) += 3.*C;
-            // a_(r, r-1) += -4.*C;
-            // a_(r, r-2) += C;
-        }
-        else if (j==0) {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            b_(r) += fermiDirac(-kmax_)*(alpha+3.*beta)*D;
-            // a_(r, r) += 3.*C;
-            // b_(r) += 3.*fermiDirac(-kmax_)*C;
-        }
-        else if (j==1) {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            b_(r) += -fermiDirac(-kmax_)*beta*D;
-            // a_(r, r) += 3.*C;
-            // a_(r, r-1) += -4.*C;
-            // b_(r) += -fermiDirac(-kmax_)*C;
-        }
-        else {
-            a_(r, r+1) += alpha*D;
-            a_(r, r) += 3.*beta*D;
-            a_(r, r-1) += -(alpha+4.*beta)*D;
-            a_(r, r-2) += beta*D;
-        }
+    else if (F < 0) {
+        a_(r, r) += -C;
+        if (j < nk_-1)
+            a_(r, r+1) += C;
     }
 }
 

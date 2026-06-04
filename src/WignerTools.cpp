@@ -206,54 +206,6 @@ void WignerSolver::addWavePacket(double x0, double delta_x, double k0, double de
 
 
 /**
- * Boundary conditions
- * @param bcType boundary condition type
- * @todo SIMPLIFY!!!
- * @todo implement armadillo convolution
- */
-void WignerSolver::setBoundCond(int bcType){
-    bcType_ = bcType;;
-    if (bcType_ == 0)
-        bc_.zeros();
-    else if (bcType_ == 1)
-        for (size_t j=0; j<nk_; ++j)
-            bc_(j) = supplyFunction(k_(j));
-    else if (bcType_ == -1)
-        for (size_t j=0; j<nk_; ++j)
-            bc_(j) = gaussian(k_(j));
-    else {
-        if (scG_ > 0) {
-            if (bcType_ == 2 || bcType_ == -2)
-                for (size_t j=0; j<nk_; ++j)
-                    bc_(j) = lorentz(k_(j));
-            else if (bcType_ == 3 || bcType_ == -3)
-                for (size_t j=0; j<nk_; ++j)
-                    bc_(j) = gauss(k_(j));
-            else if (bcType_ == 4 || bcType_ == -4)
-                for (size_t j=0; j<nk_; ++j)
-                    bc_(j) = voigt(k_(j));
-            else {
-                std::cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << std::endl;
-                std::cout << "# bcType_ = " << bcType_
-                    << " IS WRONG BOUNDARY CONDITION TYPE INT" << std::endl;
-                exit(0);
-            }
-        }
-        else {
-            std::cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << std::endl;
-            std::cout << "# scG_ = " << scG_
-                << " SCATTERING RATE SHOULD BE GREATER THAN 0" << std::endl;
-            exit(0);
-        }
-    }
-    arma::mat bc_out;
-    bc_out.insert_cols(0, k_);
-    bc_out.insert_cols(1, bc_);
-    bc_out.save("output/bc.out", arma::raw_ascii);
-}
-
-
-/**
  * Supply function as a function of wave vector
  * @param k wave vector
  * @return supply function value
@@ -270,23 +222,50 @@ double WignerSolver::supplyFunction(double k){
 
 
 /**
- * Gaussian as a function of wave vector
- * @param k wave vector
- * @return Gaussian value
+ * Lorentz profile
  */
-double WignerSolver::gaussian(double k) {
-    return pow((2.*M_PI),-1/2.) * exp(-k*k/2.);
+double WignerSolver::lorentz(double x) {
+    double g = scG_/2.;
+    return g/(x*x+g*g)/M_PI;
 }
 
 
 /**
- * Supply function as a function of energy
+ * Gauss profile
+ */
+double WignerSolver::gauss(double x) {
+    double g = scG_/2.;
+    return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g);
+}
+
+
+/**
+ * (pseudo-)Voigt profile
+ * @see https://en.wikipedia.org/wiki/Voigt_profile 
+ */
+double WignerSolver::voigt(double x) {
+    double g = scG_/2.;
+    // Calculating eta - mixing parameter in pseudo-Voigt profile
+    double gammaL = 2*scG_/2., gammaG = 2*sqrt(2*log(2))*scG_/2.;
+    double gamma = pow(pow(gammaG,5) +
+        2.69269*pow(gammaG,4)*gammaL +
+        2.42843*pow(gammaG,3)*pow(gammaL,2) +
+        4.47163*pow(gammaG,2)*pow(gammaL,3) +
+        0.07842*gammaG*pow(gammaL,4) + pow(gammaL,5), 0.2);
+    double eta = 1.36603*(gammaL/gamma) - 0.47719*pow(gammaL/gamma,2) + 0.11116*pow(gammaL/gamma, 3);
+    return eta*( g/(x*x+g*g)/M_PI ) +                       // lorentz
+           (1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) );   // gauss
+}
+
+
+/**
+ * Contact equilibrium function (Supply function)
  * used for convolution with Lorentzian and Gauss profiles
  * @param mu chemical potential
- * @param energy energy at which supply function is calculated
- * @return supply function value
+ * @param energy energy at which equilibrium function is calculated
+ * @return equilibrium function value
  */
-inline double WignerSolver::sf(double mu, double energy) {
+inline double WignerSolver::eqFun(double mu, double energy) {
     double m = m_;
     double c = m/M_PI*AU::KB/AU::eV*temp_, ex = -(energy-mu)/(AU::KB/AU::eV*temp_);     // [au]
     if (ex < 700)
@@ -297,133 +276,59 @@ inline double WignerSolver::sf(double mu, double energy) {
 
 
 /**
- * Contact equilibrium function (used only in convolution)
- * for quantum boundary conditions -> supply function
- * for classical boundary conditions -> 1D Maxwell-Boltzmann distribution
- * @param mu chemical potential
- * @param energy energy at which equilibrium function is calculated
- * @return equilibrium function value
- * @todo review classical part of the function, decide on the form of the function
- * @see https://en.wikipedia.org/wiki/Maxwell-Boltzmann_distribution
+ * Convolution
  */
-double WignerSolver::eqFun(double mu, double energy) {
-    double kBT = AU::KB/AU::eV*temp_;
-    return bcType_ > 0 ? sf(mu, energy) : pow(2.*M_PI*kBT/m_,-1/2.) * exp(-energy/kBT);
-}
-
-
-/**
- * Lorentzian and supply function convolution
- * @param k wave vector at which convolution is calculated
- * @return Lorentzian and supply function convolution
- */
-double WignerSolver::lorentz(double k) {
+double WignerSolver::conv(WignerProfile f, double k) {
     double mu = k > 0 ? uL_ : uR_;
-    double m = m_;
-    double u = k*k/m/2., g = scG_/2.;
+    double u = k*k/m_/2.;
+    int N = 1e5, i;
     double beta = 1/(AU::KB/AU::eV*temp_);
-    // ---------------
-    // Lorentz profile
-    // ---------------
-    auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
-    // -----------
-    // Convolution
-    // -----------
-    size_t N = 1e4, i;
     double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
-    double fb = 0;
     double x0, x1, xm1, xm2, xm3;
+    double fb = 0;
     for (i=1; i<N-1; i++){
         x0 = i*h, x1 = (i+1)*h;
         xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun(mu, x0) +
-            32*f(xm1-u) * eqFun(mu, xm1) +
-            12*f(xm2-u) * eqFun(mu, xm2) +
-            32*f(xm3-u) * eqFun(mu, xm3) +
-            7*f(x1-u) * eqFun(mu, x1);
-    }
-    fb *= 2*h/4./45.;
-    return fb;
-}
-
-
-/**
- * Gauss and supply function convolution
- * @param k wave vector at which convolution is calculated
- * @return Gauss and supply function convolution
- */
-double WignerSolver::gauss(double k) {
-    double mu = k > 0 ? uL_ : uR_;
-    double m = m_;
-    double u = k*k/m/2., g = scG_/2.;
-    double beta = 1/(AU::KB/AU::eV*temp_);
-    // -------------
-    // Gauss profile
-    // -------------
-    auto f = [g](double x) -> double { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
-    // -----------
-    // Convolution
-    // -----------
-    int N = 1e4, i;
-    double fb = 0;
-    double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
-    double x0, x1, xm1, xm2, xm3;
-    for (i=1; i<N-1; i++){
-        x0 = i*h, x1 = (i+1)*h;
-        xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun(mu, x0) +
-            32*f(xm1-u) * eqFun(mu, xm1) +
-            12*f(xm2-u) * eqFun(mu, xm2) +
-            32*f(xm3-u) * eqFun(mu, xm3) +
-            7*f(x1-u) * eqFun(mu, x1);
+        fb += 7 * (this->*f)(x0-u)  * eqFun(mu, x0)  +
+             32 * (this->*f)(xm1-u) * eqFun(mu, xm1) +
+             12 * (this->*f)(xm2-u) * eqFun(mu, xm2) +
+             32 * (this->*f)(xm3-u) * eqFun(mu, xm3) +
+              7 * (this->*f)(x1-u)  * eqFun(mu, x1);
     }
     return fb*2*h/4./45.;
 }
 
 
 /**
- * (pseudo-)Voigt profile and supply function convolution
- * @param k wave vector at which convolution is calculated
- * @return (pseudo-)Voigt profile and supply function convolution
- * @see https://en.wikipedia.org/wiki/Voigt_profile 
+ * Boundary conditions
+ * @param bcType boundary condition type
+ * @todo implement armadillo convolution
  */
-double WignerSolver::voigt(double k) {
-    double mu = k > 0 ? uL_ : uR_;
-    double m = m_;
-    double u = k*k/m/2., g = scG_/2.;
-    double beta = 1/(AU::KB/AU::eV*temp_);
-    // Calculating eta - mixing parameter in pseudo-Voigt profile
-    double gammaL = 2*scG_/2., gammaG = 2*sqrt(2*log(2))*scG_/2.;
-    double gamma = pow(pow(gammaG,5) +
-        2.69269*pow(gammaG,4)*gammaL +
-        2.42843*pow(gammaG,3)*pow(gammaL,2) +
-        4.47163*pow(gammaG,2)*pow(gammaL,3) +
-        0.07842*gammaG*pow(gammaL,4) + pow(gammaL,5), 0.2);
-    double eta = 1.36603*(gammaL/gamma) - 0.47719*pow(gammaL/gamma,2) + 0.11116*pow(gammaL/gamma, 3);
-    // ----------------------
-    // (pseudo-)Voigt profile
-    // ----------------------
-    auto f = [eta, g](double x) -> double { 
-        return eta*( g/(x*x+g*g)/M_PI ) +  // lorentz
-               (1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) );  // gauss
-        };
-    // -----------
-    // Convolution
-    // -----------
-    int N = 1e4, i;
-    double fb = 0;
-    double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
-    double x0, x1, xm1, xm2, xm3;
-    for (i=1; i<N-1; i++){
-        x0 = i*h, x1 = (i+1)*h;
-        xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-        fb += 7*f(x0-u) * eqFun(mu, x0) +
-            32*f(xm1-u) * eqFun(mu, xm1) +
-            12*f(xm2-u) * eqFun(mu, xm2) +
-            32*f(xm3-u) * eqFun(mu, xm3) +
-            7*f(x1-u) * eqFun(mu, x1);
+void WignerSolver::setBoundaryConditions(int bcType, double scG){
+    scG_ = scG;
+    switch (bcType) {
+        case 0: // No electron inflow, closed system
+            bc_.zeros();
+            return;
+        case 1: // Supply function
+            for (size_t j=0; j<nk_; ++j)
+                bc_(j) = supplyFunction(k_(j));
+            return;
+        case 2: // Splot with Lorentz profile
+            for (size_t j=0; j<nk_; ++j)
+                bc_(j) = conv(&WignerSolver::lorentz, k_(j));
+            return;
+        case 3: // Splot with  Gauss profile
+            for (size_t j=0; j<nk_; ++j)
+                bc_(j) = conv(&WignerSolver::gauss, k_(j));
+            return;
+        case 4: // Splot with (pseudo-)Voigt profile
+            for (size_t j=0; j<nk_; ++j)
+                bc_(j) = conv(&WignerSolver::voigt, k_(j));
+            return;
+        default:
+            throw (bcType);
     }
-    return fb*2*h/4./45.;
 }
 
 
